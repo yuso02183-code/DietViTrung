@@ -71,21 +71,18 @@
       }
     }
 
-    // Tải ảnh an toàn không lo chặn đơ
+    // 1. TẢI CÁC FILE ẢNH VỚI ĐÚNG TÊN THỰC TẾ TRÊN GITHUB CỦA CẬU
     const bgImg = new Image();
-    bgImg.src = 'bg.jpg';
+    bgImg.src = 'virus-1-4-1743496069202-1743496070057274412_2.jpg';
 
     const shipSheet = new Image();
-    shipSheet.src = 'ships.png';
+    shipSheet.src = 'png-clipart-sprite-spaceship two-spacecraft-spaceship-game-pinball-thumbnail.png';
 
     const giftSheet = new Image();
-    giftSheet.src = 'gifts.png';
+    giftSheet.src = 'colorful-gifts-pixel-art-set-260nw-2219926223.jpg';
 
     const germSheet = new Image();
-    germSheet.src = 'germs.png';
-    germSheet.onerror = () => {
-      germSheet.src = 'virus-1-4-1743496069202-1743496070057274.png';
-    };
+    germSheet.src = 'monster-pixel-art-8-bit-260nw-2768406441.jpg';
 
     let stage = 1;
     let score = 0;
@@ -285,7 +282,7 @@
     }
 
     function draw() {
-      // 1. Ảnh Nền Vi Trùng
+      // 1. Ảnh Nền
       if (bgImg.complete && bgImg.naturalWidth > 0) {
         ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
         ctx.fillStyle = 'rgba(5, 5, 12, 0.45)';
@@ -360,7 +357,7 @@
         ctx.fill();
       });
 
-      // 6. Cắt Hộp Quà Pixel
+      // 6. Hộp Quà Pixel
       gifts.forEach(g => {
         if (giftSheet.complete && giftSheet.naturalWidth > 0) {
           const gw = giftSheet.naturalWidth / 4;
@@ -374,7 +371,7 @@
         }
       });
 
-      // 7. Cắt Vi Trùng
+      // 7. Vi Trùng Pixel
       germs.forEach(g => {
         if (g.alive) {
           if (germSheet.complete && germSheet.naturalWidth > 0) {
@@ -415,5 +412,4 @@
     gameLoop();
   </script>
 </body>
-  </html>
-  
+</html>
