@@ -58,8 +58,12 @@
       }
     }
 
+    // Tải ảnh nền khu rừng bg.jpg
+    const bgImg = new Image();
+    bgImg.src = 'bg.jpg';
+
     // Danh sách Emoji quái thú
-    const MONSTER_EMOJIS = ['🐯','🦁','🦍','🦏','🫎','🫏','🐖','🐱','🐺','🐮','🐗','🐴','🦎','🦕','🐢','🐊','🐍','🦖','🐂','🐃','🦬','🐏','🐑','🐐','🦌','🦙','🦥','🦘','🦓','🐘','🦣','🦛','🦒','🐆','🐅','🐒','🦧','🐪','🦔','🦨','🦅','🦉','🦜','🐦','🕊️','🪿','🦈'];
+    const MONSTER_EMOJIS = ['🐯','🦁','🦍','🦏','🫎','🫏','🐖','🐱','🐺','🐮','🐗','🐴','🦎','🦕','🐢','🐊','🐍','🦖','🐂','🐃','🦬','🐏','🐑','🐐','🦌','🦙','🦥','🦘','ZEBRA','🐘','🦣','🦛','🦒','🐆','🐅','🐒','🦧','🐪','🦔','🦨','🦅','🦉','🦜','🐦','🕊️','🪿','🦈'];
 
     let stage = 1;
     let score = 0;
@@ -189,20 +193,17 @@
 
       if (stageTextTimer > 0) stageTextTimer--;
 
-      // Boss di chuyển qua lại
       if (boss && boss.alive) {
         boss.x += boss.speed * boss.dir;
         if (boss.x <= 10 || boss.x + boss.size >= canvas.width - 10) boss.dir *= -1;
       }
 
-      // Cập nhật vị trí đạn
       bullets.forEach((b, index) => {
         b.x += b.vx || 0;
         b.y += b.vy || -10;
         if (b.y < -30 || b.x < 0 || b.x > canvas.width) bullets.splice(index, 1);
       });
 
-      // Cập nhật vị trí cức
       poops.forEach((p, index) => {
         p.y += p.speed;
         if (p.x < player.x + player.size && p.x + p.size > player.x &&
@@ -214,7 +215,6 @@
         if (p.y > canvas.height) poops.splice(index, 1);
       });
 
-      // Cập nhật vật phẩm rơi (🎁 & ❤️)
       items.forEach((it, index) => {
         it.y += 2.2;
         if (it.x < player.x + player.size && it.x + it.size > player.x &&
@@ -231,7 +231,6 @@
         if (it.y > canvas.height) items.splice(index, 1);
       });
 
-      // Xử lý va chạm đạn với Boss và Quái
       bullets.forEach((b, bIdx) => {
         if (boss && boss.alive && b.x < boss.x + boss.size && b.x + b.size > boss.x && b.y < boss.y + boss.size && b.y + b.size > boss.y) {
           boss.hp -= 1;
@@ -240,7 +239,6 @@
           if (boss.hp <= 0) {
             boss.alive = false;
             score += 250;
-            // Diệt Boss chắc chắn rơi Hộp quà 🎁
             items.push({ x: boss.x + boss.size / 2 - 12, y: boss.y, type: 'gift', emoji: '🎁', size: 24 });
           }
           return;
@@ -253,28 +251,33 @@
             score += 15;
             
             const rand = Math.random();
-            if (rand < 0.20) { // 20% rơi hộp quà 🎁
+            if (rand < 0.20) {
               items.push({ x: m.x, y: m.y, type: 'gift', emoji: '🎁', size: 22 });
-            } else if (rand < 0.35) { // 15% rơi tim hồi máu ❤️
+            } else if (rand < 0.35) {
               items.push({ x: m.x, y: m.y, type: 'heart', emoji: '❤️', size: 22 });
             }
           }
         });
       });
 
-      // Qua màn mới
       if (monsters.every(m => !m.alive) && (!boss || !boss.alive)) {
         startStage(stage + 1);
       }
     }
 
     function draw() {
-      // Nền đêm sao
-      ctx.fillStyle = '#0a0d14';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      // 1. Vẽ Ảnh Nền Khu Rừng
+      if (bgImg.complete && bgImg.naturalWidth > 0) {
+        ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.35)'; // Phủ tối mờ nhẹ để Emoji nổi bật hơn
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      } else {
+        ctx.fillStyle = '#0d1117';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      }
 
       if (gameOver) {
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
         ctx.fillStyle = '#ff5555';
@@ -295,23 +298,22 @@
         return;
       }
 
-      // 1. Vẽ Phi thuyền 🗼
+      // 2. Vẽ Phi thuyền 🗼
       ctx.font = `${player.size}px Arial`;
       ctx.fillText(player.emoji, player.x, player.y + player.size);
 
-      // 2. Vẽ Boss khổng lồ
+      // 3. Vẽ Boss khổng lồ
       if (boss && boss.alive) {
         ctx.font = `${boss.size}px Arial`;
         ctx.fillText(boss.emoji, boss.x, boss.y + boss.size);
 
-        // Thanh máu Boss
         ctx.fillStyle = '#ff5555';
         ctx.fillRect(boss.x, boss.y - 12, boss.size, 6);
         ctx.fillStyle = '#50fa7b';
         ctx.fillRect(boss.x, boss.y - 12, (boss.hp / boss.maxHp) * boss.size, 6);
       }
 
-      // 3. Vẽ Quái thường
+      // 4. Vẽ Quái thường
       monsters.forEach(m => {
         if (m.alive) {
           ctx.font = `${m.size}px Arial`;
@@ -319,19 +321,19 @@
         }
       });
 
-      // 4. Vẽ Đạn đá 🪨
+      // 5. Vẽ Đạn đá 🪨
       bullets.forEach(b => {
         ctx.font = `${b.size}px Arial`;
         ctx.fillText('🪨', b.x, b.y + b.size);
       });
 
-      // 5. Vẽ cức 💩
+      // 6. Vẽ cức 💩
       poops.forEach(p => {
         ctx.font = `${p.size}px Arial`;
         ctx.fillText('💩', p.x, p.y + p.size);
       });
 
-      // 6. Vẽ Quà 🎁 & Tim ❤️
+      // 7. Vẽ Quà 🎁 & Tim ❤️
       items.forEach(it => {
         ctx.font = `${it.size}px Arial`;
         ctx.fillText(it.emoji, it.x, it.y + it.size);
@@ -362,4 +364,5 @@
     gameLoop();
   </script>
 </body>
-</html>
+  </html>
+  
