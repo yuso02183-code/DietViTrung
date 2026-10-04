@@ -1,0 +1,15 @@
+{
+  "name": "Thợ Săn Quái Thú Emoji",
+  "short_name": "Săn Quái",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0d1117",
+  "theme_color": "#0d1117",
+  "icons": [
+    {
+      "src": "bg.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg"
+    }
+  ]
+}
