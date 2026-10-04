@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Diệt Vi Trùng - Pixel Edition</title>
+  <title>Thợ Săn Quái Thú Emoji</title>
   <style>
     * { touch-action: manipulation; box-sizing: border-box; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
     html, body {
       margin: 0; padding: 0;
       width: 100%; height: 100%;
-      background-color: #030308; color: #fff;
+      background-color: #0d1117; color: #fff;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       display: flex; flex-direction: column;
       justify-content: center; align-items: center;
@@ -24,7 +24,7 @@
     canvas {
       width: 100%; height: 100%;
       object-fit: contain;
-      background-color: #030308;
+      background-color: #0b0e14;
       touch-action: none;
     }
     .fullscreen-btn {
@@ -58,75 +58,67 @@
       }
     }
 
-    const bgImg = new Image();
-    bgImg.src = 'virus-1-4-1743496069202-1743496070057274412836.jpg';
-
-    const shipImg = new Image();
-    shipImg.src = 'ship.png';
-
-    const bulletImg = new Image();
-    bulletImg.src = 'bullet.png';
-
-    const virusSheet = new Image();
-    virusSheet.src = 'spritesheet.png';
+    // Danh sách Emoji quái thú
+    const MONSTER_EMOJIS = ['🐯','🦁','🦍','🦏','🫎','🫏','🐖','🐱','🐺','🐮','🐗','🐴','🦎','🦕','🐢','🐊','🐍','🦖','🐂','🐃','🦬','🐏','🐑','🐐','🦌','🦙','🦥','🦘','🦓','🐘','🦣','🦛','🦒','🐆','🐅','🐒','🦧','🐪','🦔','🦨','🦅','🦉','🦜','🐦','🕊️','🪿','🦈'];
 
     let stage = 1;
     let score = 0;
     let hp = 3;
+    let maxHp = 5;
     let gameOver = false;
     let restartTimer = 0;
     let stageTextTimer = 100;
     let weaponLevel = 1;
-    let currentShipIndex = 0;
 
     const player = {
-      x: canvas.width / 2 - 24,
-      y: canvas.height - 90,
-      width: 48,
-      height: 48
+      x: canvas.width / 2 - 20,
+      y: canvas.height - 80,
+      size: 40,
+      emoji: '🗼'
     };
 
     let bullets = [];
-    let germs = [];
-    let poisons = [];
-    let gifts = [];
+    let monsters = [];
+    let poops = [];
+    let items = [];
     let boss = null;
+
+    function getRandomMonster() {
+      return MONSTER_EMOJIS[Math.floor(Math.random() * MONSTER_EMOJIS.length)];
+    }
 
     function startStage(stageNum) {
       stage = stageNum;
       stageTextTimer = 90;
-      poisons = [];
+      poops = [];
       bullets = [];
-      gifts = [];
-      currentShipIndex = Math.floor(Math.random() * 2);
+      items = [];
 
-      germs = [];
+      monsters = [];
       const rows = 3;
       const cols = 6;
       for (let r = 0; r < rows; r++) {
         for (let c = 0; c < cols; c++) {
-          germs.push({
-            col: c,
-            row: r,
-            x: 18 + c * 54,
-            y: 70 + r * 54,
-            width: 44,
-            height: 44,
-            alive: true
+          monsters.push({
+            x: 20 + c * 52,
+            y: 70 + r * 50,
+            size: 34,
+            alive: true,
+            emoji: getRandomMonster()
           });
         }
       }
 
       boss = {
-        x: canvas.width / 2 - 40,
-        y: 25,
-        width: 80,
-        height: 60,
+        x: canvas.width / 2 - 35,
+        y: 20,
+        size: 70,
         speed: 2 + stage * 0.2,
         dir: 1,
         hp: 20 + stage * 5,
         maxHp: 20 + stage * 5,
-        alive: true
+        alive: true,
+        emoji: getRandomMonster()
       };
     }
 
@@ -134,7 +126,7 @@
       score = 0;
       hp = 3;
       weaponLevel = 1;
-      player.x = canvas.width / 2 - 24;
+      player.x = canvas.width / 2 - 20;
       gameOver = false;
       restartTimer = 0;
       startStage(1);
@@ -150,41 +142,43 @@
       const rect = canvas.getBoundingClientRect();
       const scale = canvas.width / rect.width;
       const touchX = (clientX - rect.left) * scale;
-      player.x = Math.max(0, Math.min(canvas.width - player.width, touchX - player.width / 2));
+      player.x = Math.max(0, Math.min(canvas.width - player.size, touchX - player.size / 2));
     }
 
     canvas.addEventListener('touchmove', (e) => { e.preventDefault(); handleInput(e.touches[0].clientX); });
     canvas.addEventListener('touchstart', (e) => { handleInput(e.touches[0].clientX); });
     canvas.addEventListener('click', (e) => { if (gameOver) resetGame(); });
 
+    // Bắn đạn đá (🪨)
     setInterval(() => {
       if (!gameOver) {
-        const cx = player.x + player.width / 2;
+        const cx = player.x + player.size / 2 - 10;
         if (weaponLevel === 1) {
-          bullets.push({ x: cx - 6, y: player.y, vx: 0, vy: -10, width: 12, height: 24 });
+          bullets.push({ x: cx, y: player.y, vx: 0, vy: -10, size: 20 });
         } else if (weaponLevel === 2) {
-          bullets.push({ x: cx - 14, y: player.y, vx: 0, vy: -10, width: 12, height: 24 });
-          bullets.push({ x: cx + 2, y: player.y, vx: 0, vy: -10, width: 12, height: 24 });
+          bullets.push({ x: cx - 12, y: player.y, vx: 0, vy: -10, size: 20 });
+          bullets.push({ x: cx + 12, y: player.y, vx: 0, vy: -10, size: 20 });
         } else {
-          bullets.push({ x: cx - 6, y: player.y, vx: 0, vy: -10, width: 12, height: 24 });
-          bullets.push({ x: cx - 20, y: player.y, vx: -1.5, vy: -9.5, width: 12, height: 24 });
-          bullets.push({ x: cx + 8, y: player.y, vx: 1.5, vy: -9.5, width: 12, height: 24 });
+          bullets.push({ x: cx, y: player.y, vx: 0, vy: -10, size: 20 });
+          bullets.push({ x: cx - 16, y: player.y, vx: -1.5, vy: -9.5, size: 20 });
+          bullets.push({ x: cx + 16, y: player.y, vx: 1.5, vy: -9.5, size: 20 });
         }
       }
-    }, 180);
+    }, 200);
 
+    // Quái thả cức (💩)
     setInterval(() => {
       if (!gameOver) {
         if (boss && boss.alive) {
-          poisons.push({ x: boss.x + boss.width / 2 - 4, y: boss.y + boss.height, speed: 4 + stage * 0.3 });
+          poops.push({ x: boss.x + boss.size / 2 - 12, y: boss.y + boss.size, speed: 4 + stage * 0.3, size: 24 });
         }
-        const aliveGerms = germs.filter(g => g.alive);
-        if (aliveGerms.length > 0) {
-          const g = aliveGerms[Math.floor(Math.random() * aliveGerms.length)];
-          poisons.push({ x: g.x + g.width / 2 - 4, y: g.y + g.height, speed: 3.2 + stage * 0.3 });
+        const aliveMonsters = monsters.filter(m => m.alive);
+        if (aliveMonsters.length > 0) {
+          const m = aliveMonsters[Math.floor(Math.random() * aliveMonsters.length)];
+          poops.push({ x: m.x + m.size / 2 - 10, y: m.y + m.size, speed: 3.2 + stage * 0.3, size: 20 });
         }
       }
-    }, 800);
+    }, 750);
 
     function update() {
       if (gameOver) {
@@ -195,79 +189,89 @@
 
       if (stageTextTimer > 0) stageTextTimer--;
 
+      // Boss di chuyển qua lại
       if (boss && boss.alive) {
         boss.x += boss.speed * boss.dir;
-        if (boss.x <= 10 || boss.x + boss.width >= canvas.width - 10) boss.dir *= -1;
+        if (boss.x <= 10 || boss.x + boss.size >= canvas.width - 10) boss.dir *= -1;
       }
 
+      // Cập nhật vị trí đạn
       bullets.forEach((b, index) => {
         b.x += b.vx || 0;
         b.y += b.vy || -10;
         if (b.y < -30 || b.x < 0 || b.x > canvas.width) bullets.splice(index, 1);
       });
 
-      poisons.forEach((p, index) => {
+      // Cập nhật vị trí cức
+      poops.forEach((p, index) => {
         p.y += p.speed;
-        if (p.x < player.x + player.width && p.x + 10 > player.x &&
-            p.y < player.y + player.height && p.y + 14 > player.y) {
-          poisons.splice(index, 1);
+        if (p.x < player.x + player.size && p.x + p.size > player.x &&
+            p.y < player.y + player.size && p.y + p.size > player.y) {
+          poops.splice(index, 1);
           hp -= 1;
           if (hp <= 0) { gameOver = true; restartTimer = 0; }
         }
-        if (p.y > canvas.height) poisons.splice(index, 1);
+        if (p.y > canvas.height) poops.splice(index, 1);
       });
 
-      gifts.forEach((g, index) => {
-        g.y += 2.2;
-        if (g.x < player.x + player.width && g.x + 28 > player.x &&
-            g.y < player.y + player.height && g.y + 28 > player.y) {
-          gifts.splice(index, 1);
-          if (weaponLevel < 3) weaponLevel++;
-          score += 50;
+      // Cập nhật vật phẩm rơi (🎁 & ❤️)
+      items.forEach((it, index) => {
+        it.y += 2.2;
+        if (it.x < player.x + player.size && it.x + it.size > player.x &&
+            it.y < player.y + player.size && it.y + it.size > player.y) {
+          items.splice(index, 1);
+          if (it.type === 'gift') {
+            if (weaponLevel < 3) weaponLevel++;
+            score += 50;
+          } else if (it.type === 'heart') {
+            if (hp < maxHp) hp++;
+            score += 30;
+          }
         }
-        if (g.y > canvas.height) gifts.splice(index, 1);
+        if (it.y > canvas.height) items.splice(index, 1);
       });
 
+      // Xử lý va chạm đạn với Boss và Quái
       bullets.forEach((b, bIdx) => {
-        if (boss && boss.alive && b.x < boss.x + boss.width && b.x + b.width > boss.x && b.y < boss.y + boss.height && b.y + b.height > boss.y) {
+        if (boss && boss.alive && b.x < boss.x + boss.size && b.x + b.size > boss.x && b.y < boss.y + boss.size && b.y + b.size > boss.y) {
           boss.hp -= 1;
           bullets.splice(bIdx, 1);
           score += 20;
           if (boss.hp <= 0) {
             boss.alive = false;
             score += 250;
-            gifts.push({ x: boss.x + boss.width / 2 - 14, y: boss.y });
+            // Diệt Boss chắc chắn rơi Hộp quà 🎁
+            items.push({ x: boss.x + boss.size / 2 - 12, y: boss.y, type: 'gift', emoji: '🎁', size: 24 });
           }
           return;
         }
 
-        germs.forEach((g) => {
-          if (g.alive && b.x < g.x + g.width && b.x + b.width > g.x && b.y < g.y + g.height && b.y + b.height > g.y) {
-            g.alive = false;
+        monsters.forEach((m) => {
+          if (m.alive && b.x < m.x + m.size && b.x + b.size > m.x && b.y < m.y + m.size && b.y + b.size > m.y) {
+            m.alive = false;
             bullets.splice(bIdx, 1);
             score += 15;
-            if (Math.random() < 0.25) {
-              gifts.push({ x: g.x + 6, y: g.y });
+            
+            const rand = Math.random();
+            if (rand < 0.20) { // 20% rơi hộp quà 🎁
+              items.push({ x: m.x, y: m.y, type: 'gift', emoji: '🎁', size: 22 });
+            } else if (rand < 0.35) { // 15% rơi tim hồi máu ❤️
+              items.push({ x: m.x, y: m.y, type: 'heart', emoji: '❤️', size: 22 });
             }
           }
         });
       });
 
-      if (germs.every(g => !g.alive) && (!boss || !boss.alive)) {
+      // Qua màn mới
+      if (monsters.every(m => !m.alive) && (!boss || !boss.alive)) {
         startStage(stage + 1);
       }
     }
 
     function draw() {
-      // 1. Phủ lớp tối che bớt hình nền rối mắt
-      if (bgImg.complete && bgImg.naturalWidth > 0) {
-        ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = 'rgba(5, 5, 18, 0.82)'; // Làm tối nền 82%
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-      } else {
-        ctx.fillStyle = '#050512';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-      }
+      // Nền đêm sao
+      ctx.fillStyle = '#0a0d14';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       if (gameOver) {
         ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
@@ -284,109 +288,69 @@
 
         const cd = Math.ceil((180 - restartTimer) / 60);
         ctx.fillStyle = '#50fa7b';
-        ctx.fillText('Tự động hồi sinh sau: ' + cd + 's', canvas.width / 2, canvas.height / 2 + 50);
+        ctx.fillText('Tự động chơi lại sau: ' + cd + 's', canvas.width / 2, canvas.height / 2 + 50);
         ctx.fillStyle = '#ffb86c';
         ctx.font = '13px Arial';
-        ctx.fillText('👉 CHẠM MÀN HÌNH ĐỂ CHƠI LẠI NGAY 👈', canvas.width / 2, canvas.height / 2 + 85);
+        ctx.fillText('👉 CHẠM MÀN HÌNH ĐỂ THỬ LẠI 👈', canvas.width / 2, canvas.height / 2 + 85);
         return;
       }
 
-      // 2. Vẽ Phi Thuyền
-      if (shipImg.complete && shipImg.naturalWidth > 0) {
-        const sWidth = shipImg.naturalWidth / 2;
-        const sHeight = shipImg.naturalHeight;
-        ctx.drawImage(shipImg, currentShipIndex * sWidth, 0, sWidth, sHeight, player.x, player.y, player.width, player.height);
-      } else {
-        ctx.fillStyle = '#50fa7b';
-        ctx.fillRect(player.x, player.y, player.width, player.height);
-      }
+      // 1. Vẽ Phi thuyền 🗼
+      ctx.font = `${player.size}px Arial`;
+      ctx.fillText(player.emoji, player.x, player.y + player.size);
 
-      // 3. Vẽ Boss
+      // 2. Vẽ Boss khổng lồ
       if (boss && boss.alive) {
-        if (virusSheet.complete && virusSheet.naturalWidth > 0) {
-          const cellW = virusSheet.naturalWidth / 6;
-          const cellH = virusSheet.naturalHeight / 3;
-          // Cắt xén bỏ 8% viền xung quanh để sạch khung
-          const padW = cellW * 0.08;
-          const padH = cellH * 0.08;
-          ctx.drawImage(virusSheet, padW, padH, cellW - padW * 2, cellH - padH * 2, boss.x, boss.y, boss.width, boss.height);
-        } else {
-          ctx.fillStyle = '#ff3333';
-          ctx.fillRect(boss.x, boss.y, boss.width, boss.height);
-        }
+        ctx.font = `${boss.size}px Arial`;
+        ctx.fillText(boss.emoji, boss.x, boss.y + boss.size);
 
+        // Thanh máu Boss
         ctx.fillStyle = '#ff5555';
-        ctx.fillRect(boss.x, boss.y - 10, boss.width, 5);
+        ctx.fillRect(boss.x, boss.y - 12, boss.size, 6);
         ctx.fillStyle = '#50fa7b';
-        ctx.fillRect(boss.x, boss.y - 10, (boss.hp / boss.maxHp) * boss.width, 5);
+        ctx.fillRect(boss.x, boss.y - 12, (boss.hp / boss.maxHp) * boss.size, 6);
       }
 
-      // 4. Vẽ Đạn Lửa
-      if (bulletImg.complete && bulletImg.naturalWidth > 0) {
-        bullets.forEach(b => {
-          ctx.drawImage(bulletImg, b.x, b.y, b.width, b.height);
-        });
-      } else {
-        ctx.fillStyle = '#ffeb3b';
-        bullets.forEach(b => { ctx.fillRect(b.x, b.y, b.width, b.height); });
-      }
-
-      // 5. Vẽ Đạn Độc
-      ctx.fillStyle = '#50fa7b';
-      poisons.forEach(p => {
-        ctx.beginPath();
-        ctx.arc(p.x + 4, p.y + 6, 5, 0, Math.PI * 2);
-        ctx.fill();
+      // 3. Vẽ Quái thường
+      monsters.forEach(m => {
+        if (m.alive) {
+          ctx.font = `${m.size}px Arial`;
+          ctx.fillText(m.emoji, m.x, m.y + m.size);
+        }
       });
 
-      // 6. Vẽ Quà
-      gifts.forEach(g => {
-        ctx.fillStyle = '#ff79c6';
-        ctx.fillRect(g.x, g.y, 26, 26);
-        ctx.fillStyle = '#fff';
-        ctx.fillRect(g.x + 10, g.y, 6, 26);
-        ctx.fillRect(g.x, g.y + 10, 26, 6);
+      // 4. Vẽ Đạn đá 🪨
+      bullets.forEach(b => {
+        ctx.font = `${b.size}px Arial`;
+        ctx.fillText('🪨', b.x, b.y + b.size);
       });
 
-      // 7. Cắt bỏ viền khung xấu quanh 18 con Virus
-      if (virusSheet.complete && virusSheet.naturalWidth > 0) {
-        const vCols = 6;
-        const vRows = 3;
-        const cellW = virusSheet.naturalWidth / vCols;
-        const cellH = virusSheet.naturalHeight / vRows;
-        
-        // Tỷ lệ thụt lùi để xén bỏ đường viền ô tím
-        const cropX = cellW * 0.085;
-        const cropY = cellH * 0.085;
+      // 5. Vẽ cức 💩
+      poops.forEach(p => {
+        ctx.font = `${p.size}px Arial`;
+        ctx.fillText('💩', p.x, p.y + p.size);
+      });
 
-        germs.forEach(g => {
-          if (g.alive) {
-            ctx.drawImage(
-              virusSheet,
-              g.col * cellW + cropX, 
-              g.row * cellH + cropY, 
-              cellW - cropX * 2, 
-              cellH - cropY * 2,
-              g.x, g.y, g.width, g.height
-            );
-          }
-        });
-      }
+      // 6. Vẽ Quà 🎁 & Tim ❤️
+      items.forEach(it => {
+        ctx.font = `${it.size}px Arial`;
+        ctx.fillText(it.emoji, it.x, it.y + it.size);
+      });
 
       // Giao diện UI
       ctx.fillStyle = '#fff';
       ctx.font = 'bold 13px Arial';
       ctx.textAlign = 'left';
       ctx.fillText('Điểm: ' + score, 10, 25);
-      ctx.fillText('Màn: ' + stage, 120, 25);
-      ctx.fillText('Đạn: Lvl ' + weaponLevel, 190, 25);
-      ctx.fillText('Máu: ' + '❤️'.repeat(hp), 265, 25);
+      ctx.fillText('Màn: ' + stage, 110, 25);
+      ctx.fillText('Đạn: Lvl ' + weaponLevel, 180, 25);
+      ctx.fillText('Máu: ' + '❤️'.repeat(hp), 260, 25);
 
       if (stageTextTimer > 0) {
         ctx.fillStyle = '#50fa7b';
         ctx.font = 'bold 28px Arial';
         ctx.textAlign = 'center';
-        ctx.fillText('STAGE ' + stage, canvas.width / 2, canvas.height / 2 - 10);
+        ctx.fillText('MÀN ' + stage, canvas.width / 2, canvas.height / 2 - 10);
       }
     }
 
