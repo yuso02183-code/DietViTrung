@@ -71,48 +71,18 @@
       }
     }
 
-    // LÀM TRONG SUỐT NỀN TRẮNG
-    function processTransparent(img, isGrid = false) {
-      const c = document.createElement('canvas');
-      c.width = img.naturalWidth;
-      c.height = img.naturalHeight;
-      const cx = c.getContext('2d');
-      cx.drawImage(img, 0, 0);
-      try {
-        const imgData = cx.getImageData(0, 0, c.width, c.height);
-        const data = imgData.data;
-        for (let i = 0; i < data.length; i += 4) {
-          const r = data[i], g = data[i+1], b = data[i+2];
-          // Xóa nền màu trắng/sáng
-          if (r > 220 && g > 220 && b > 220) {
-            data[i+3] = 0;
-          }
-          // Xóa luôn ô caro xám nếu có
-          if (isGrid && Math.abs(r - g) < 10 && Math.abs(g - b) < 10 && r > 180) {
-            data[i+3] = 0;
-          }
-        }
-        cx.putImageData(imgData, 0, 0);
-      } catch(e) {}
-      return c;
-    }
-
+    // NỀN VÀ 3 SPRITE PNG CHUẨN TRONG SUỐT
     const bgImg = new Image();
     bgImg.src = 'virus-1-4-1743496069202-1743496070057274412836.jpg';
 
-    let shipCanvas = null, giftCanvas = null, germCanvas = null;
-
     const shipSheet = new Image();
-    shipSheet.src = 'png-clipart-sprite-spaceshiptwo-spacecraft-spaceshipone-opengameart-org-space-invaders-game-angle-thumbnail (1).png';
-    shipSheet.onload = () => { shipCanvas = processTransparent(shipSheet, true); };
+    shipSheet.src = 'png-clipart-sprite-spaceshiptwo-spacecraft-spaceshipone-opengameart-org-space-invaders-game-angle-thumbnail.png';
 
     const giftSheet = new Image();
-    giftSheet.src = 'colorful-gifts-pixel-art-set-260nw-2219926223.jpg';
-    giftSheet.onload = () => { giftCanvas = processTransparent(giftSheet); };
+    giftSheet.src = 'colorful-gifts-pixel-art-set-260nw-2219926223.png';
 
     const germSheet = new Image();
-    germSheet.src = 'monster-pixel-art-8-bit-260nw-2768406441.jpg';
-    germSheet.onload = () => { germCanvas = processTransparent(germSheet); };
+    germSheet.src = 'monster-pixel-art-8-bit-260nw-2768406441.png';
 
     let stage = 1;
     let score = 0;
@@ -127,7 +97,7 @@
       x: canvas.width / 2 - 22,
       y: canvas.height - 80,
       width: 44,
-      height: 50
+      height: 44
     };
 
     let bullets = [];
@@ -168,7 +138,7 @@
         x: canvas.width / 2 - 35,
         y: 30,
         width: 70,
-        height: 45,
+        height: 50,
         speed: 2 + stage * 0.2,
         dir: 1,
         hp: 15 + stage * 6,
@@ -344,19 +314,17 @@
         return;
       }
 
-      const activeShip = shipCanvas || shipSheet;
-
       // 2. Tàu Vũ Trụ
       if (shipSheet.complete && shipSheet.naturalWidth > 0) {
         const shipH = shipSheet.naturalHeight / 12;
-        ctx.drawImage(activeShip, 0, currentShipIndex * shipH, shipSheet.naturalWidth * 0.5, shipH, player.x, player.y, player.width, player.height);
+        ctx.drawImage(shipSheet, 0, currentShipIndex * shipH, 50, shipH, player.x, player.y, player.width, player.height);
       }
 
       // 3. Boss Phi Thuyền
       if (boss && boss.alive) {
         if (shipSheet.complete && shipSheet.naturalWidth > 0) {
           const shipH = shipSheet.naturalHeight / 12;
-          ctx.drawImage(activeShip, 0, 11 * shipH, shipSheet.naturalWidth * 0.5, shipH, boss.x, boss.y, boss.width, boss.height);
+          ctx.drawImage(shipSheet, 0, 11 * shipH, 50, shipH, boss.x, boss.y, boss.width, boss.height);
         }
         ctx.fillStyle = '#ff5555';
         ctx.fillRect(boss.x, boss.y - 8, boss.width, 4);
@@ -364,11 +332,11 @@
         ctx.fillRect(boss.x, boss.y - 8, (boss.hp / boss.maxHp) * boss.width, 4);
       }
 
-      // 4. Đạn Lửa Pixel
+      // 4. Đạn Pixel
       bullets.forEach(b => {
         if (shipSheet.complete && shipSheet.naturalWidth > 0) {
           const shipH = shipSheet.naturalHeight / 12;
-          ctx.drawImage(activeShip, shipSheet.naturalWidth * 0.5, currentShipIndex * shipH, shipSheet.naturalWidth * 0.5, shipH * 0.4, b.x, b.y, 10, 20);
+          ctx.drawImage(shipSheet, 50, currentShipIndex * shipH, 50, shipH, b.x, b.y, 10, 22);
         }
       });
 
@@ -381,26 +349,24 @@
       });
 
       // 6. Hộp Quà
-      const activeGift = giftCanvas || giftSheet;
       gifts.forEach(g => {
         if (giftSheet.complete && giftSheet.naturalWidth > 0) {
           const gw = giftSheet.naturalWidth / 4;
-          const gh = (giftSheet.naturalHeight * 0.88) / 2;
+          const gh = giftSheet.naturalHeight / 2;
           const gx = (g.type % 4) * gw;
           const gy = Math.floor(g.type / 4) * gh;
-          ctx.drawImage(activeGift, gx, gy, gw, gh, g.x, g.y, 28, 28);
+          ctx.drawImage(giftSheet, gx, gy, gw, gh, g.x, g.y, 28, 28);
         }
       });
 
       // 7. Vi Trùng
-      const activeGerm = germCanvas || germSheet;
       germs.forEach(g => {
         if (g.alive && germSheet.complete && germSheet.naturalWidth > 0) {
           const srcW = germSheet.naturalWidth / 6;
-          const srcH = (germSheet.naturalHeight * 0.88) / 3;
+          const srcH = germSheet.naturalHeight / 3;
           const gx = (g.type % 6) * srcW;
           const gy = Math.floor(g.type / 6) * srcH;
-          ctx.drawImage(activeGerm, gx, gy, srcW, srcH, g.x, g.y, g.width, g.height);
+          ctx.drawImage(germSheet, gx, gy, srcW, srcH, g.x, g.y, g.width, g.height);
         }
       });
 
