@@ -9,7 +9,7 @@
     html, body {
       margin: 0; padding: 0;
       width: 100%; height: 100%;
-      background-color: #05050a; color: #fff;
+      background-color: #030308; color: #fff;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       display: flex; flex-direction: column;
       justify-content: center; align-items: center;
@@ -24,12 +24,12 @@
     canvas {
       width: 100%; height: 100%;
       object-fit: contain;
-      background-color: #05050a;
+      background-color: #030308;
       touch-action: none;
     }
     .fullscreen-btn {
       position: absolute; top: 10px; right: 10px; z-index: 100;
-      background: rgba(0, 0, 0, 0.6); border: 1.5px solid #50fa7b;
+      background: rgba(0, 0, 0, 0.7); border: 1.5px solid #50fa7b;
       color: #50fa7b; padding: 6px 12px; border-radius: 20px;
       font-size: 12px; font-weight: bold; cursor: pointer;
       backdrop-filter: blur(4px);
@@ -58,18 +58,17 @@
       }
     }
 
-    // Tải các tài nguyên hình ảnh cậu vừa chuẩn bị
     const bgImg = new Image();
     bgImg.src = 'virus-1-4-1743496069202-1743496070057274412836.jpg';
 
     const shipImg = new Image();
-    shipImg.src = 'ship.png'; // Ảnh phi thuyền[span_6](start_span)[span_6](end_span)
+    shipImg.src = 'ship.png';
 
     const bulletImg = new Image();
-    bulletImg.src = 'bullet.png'; // Ảnh đạn lửa[span_7](start_span)[span_7](end_span)
+    bulletImg.src = 'bullet.png';
 
     const virusSheet = new Image();
-    virusSheet.src = 'spritesheet.png'; // Bảng 18 con virus (6 cột x 3 hàng)[span_8](start_span)[span_8](end_span)
+    virusSheet.src = 'spritesheet.png';
 
     let stage = 1;
     let score = 0;
@@ -99,20 +98,20 @@
       poisons = [];
       bullets = [];
       gifts = [];
-      currentShipIndex = Math.floor(Math.random() * 2); // Chọn ngẫu nhiên 1 trong 2 phi thuyền[span_9](start_span)[span_9](end_span)
+      currentShipIndex = Math.floor(Math.random() * 2);
 
       germs = [];
-      const rows = 3; // 3 hàng virus từ bảng ảnh[span_10](start_span)[span_10](end_span)
-      const cols = 6; // 6 cột virus từ bảng ảnh[span_11](start_span)[span_11](end_span)
+      const rows = 3;
+      const cols = 6;
       for (let r = 0; r < rows; r++) {
         for (let c = 0; c < cols; c++) {
           germs.push({
             col: c,
             row: r,
-            x: 20 + c * 52,
-            y: 70 + r * 52,
-            width: 42,
-            height: 42,
+            x: 18 + c * 54,
+            y: 70 + r * 54,
+            width: 44,
+            height: 44,
             alive: true
           });
         }
@@ -120,7 +119,7 @@
 
       boss = {
         x: canvas.width / 2 - 40,
-        y: 30,
+        y: 25,
         width: 80,
         height: 60,
         speed: 2 + stage * 0.2,
@@ -158,7 +157,6 @@
     canvas.addEventListener('touchstart', (e) => { handleInput(e.touches[0].clientX); });
     canvas.addEventListener('click', (e) => { if (gameOver) resetGame(); });
 
-    // Bắn đạn liên tục
     setInterval(() => {
       if (!gameOver) {
         const cx = player.x + player.width / 2;
@@ -175,7 +173,6 @@
       }
     }, 180);
 
-    // Kẻ địch thả đạn độc
     setInterval(() => {
       if (!gameOver) {
         if (boss && boss.alive) {
@@ -262,17 +259,18 @@
     }
 
     function draw() {
+      // 1. Phủ lớp tối che bớt hình nền rối mắt
       if (bgImg.complete && bgImg.naturalWidth > 0) {
         ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = 'rgba(5, 5, 12, 0.55)';
+        ctx.fillStyle = 'rgba(5, 5, 18, 0.82)'; // Làm tối nền 82%
         ctx.fillRect(0, 0, canvas.width, canvas.height);
       } else {
-        ctx.fillStyle = '#05050a';
+        ctx.fillStyle = '#050512';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
       }
 
       if (gameOver) {
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.88)';
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
         ctx.fillStyle = '#ff5555';
@@ -293,7 +291,7 @@
         return;
       }
 
-      // 1. Vẽ Phi Thuyền từ file ship.png (Cắt ảnh theo từng tàu)[span_12](start_span)[span_12](end_span)
+      // 2. Vẽ Phi Thuyền
       if (shipImg.complete && shipImg.naturalWidth > 0) {
         const sWidth = shipImg.naturalWidth / 2;
         const sHeight = shipImg.naturalHeight;
@@ -303,10 +301,15 @@
         ctx.fillRect(player.x, player.y, player.width, player.height);
       }
 
-      // 2. Vẽ Boss
+      // 3. Vẽ Boss
       if (boss && boss.alive) {
         if (virusSheet.complete && virusSheet.naturalWidth > 0) {
-          ctx.drawImage(virusSheet, 0, 0, virusSheet.naturalWidth / 6, virusSheet.naturalHeight / 3, boss.x, boss.y, boss.width, boss.height);
+          const cellW = virusSheet.naturalWidth / 6;
+          const cellH = virusSheet.naturalHeight / 3;
+          // Cắt xén bỏ 8% viền xung quanh để sạch khung
+          const padW = cellW * 0.08;
+          const padH = cellH * 0.08;
+          ctx.drawImage(virusSheet, padW, padH, cellW - padW * 2, cellH - padH * 2, boss.x, boss.y, boss.width, boss.height);
         } else {
           ctx.fillStyle = '#ff3333';
           ctx.fillRect(boss.x, boss.y, boss.width, boss.height);
@@ -318,7 +321,7 @@
         ctx.fillRect(boss.x, boss.y - 10, (boss.hp / boss.maxHp) * boss.width, 5);
       }
 
-      // 3. Vẽ Đạn Lửa từ bullet.png[span_13](start_span)[span_13](end_span)
+      // 4. Vẽ Đạn Lửa
       if (bulletImg.complete && bulletImg.naturalWidth > 0) {
         bullets.forEach(b => {
           ctx.drawImage(bulletImg, b.x, b.y, b.width, b.height);
@@ -328,7 +331,7 @@
         bullets.forEach(b => { ctx.fillRect(b.x, b.y, b.width, b.height); });
       }
 
-      // 4. Vẽ Đạn Độc
+      // 5. Vẽ Đạn Độc
       ctx.fillStyle = '#50fa7b';
       poisons.forEach(p => {
         ctx.beginPath();
@@ -336,7 +339,7 @@
         ctx.fill();
       });
 
-      // 5. Vẽ Hộp Quà Nâng Cấp Đạn
+      // 6. Vẽ Quà
       gifts.forEach(g => {
         ctx.fillStyle = '#ff79c6';
         ctx.fillRect(g.x, g.y, 26, 26);
@@ -345,25 +348,32 @@
         ctx.fillRect(g.x, g.y + 10, 26, 6);
       });
 
-      // 6. Cắt và vẽ 18 con Virus từ file spritesheet.png[span_14](start_span)[span_14](end_span)
+      // 7. Cắt bỏ viền khung xấu quanh 18 con Virus
       if (virusSheet.complete && virusSheet.naturalWidth > 0) {
         const vCols = 6;
         const vRows = 3;
         const cellW = virusSheet.naturalWidth / vCols;
         const cellH = virusSheet.naturalHeight / vRows;
+        
+        // Tỷ lệ thụt lùi để xén bỏ đường viền ô tím
+        const cropX = cellW * 0.085;
+        const cropY = cellH * 0.085;
 
         germs.forEach(g => {
           if (g.alive) {
             ctx.drawImage(
               virusSheet,
-              g.col * cellW, g.row * cellH, cellW, cellH,
+              g.col * cellW + cropX, 
+              g.row * cellH + cropY, 
+              cellW - cropX * 2, 
+              cellH - cropY * 2,
               g.x, g.y, g.width, g.height
             );
           }
         });
       }
 
-      // Giao diện UI Điểm số, Máu
+      // Giao diện UI
       ctx.fillStyle = '#fff';
       ctx.font = 'bold 13px Arial';
       ctx.textAlign = 'left';
