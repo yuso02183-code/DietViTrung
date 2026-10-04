@@ -247,7 +247,7 @@
         }
 
         monsters.forEach((m) => {
-          if (m.alive && b.x < m.x + m.size && b.x + b.size > m.x && b.y < m.y + m.size && b.y + b.size > m.y) {
+          if (m.alive && b.x < m.x + m.size && b.x + b.size > m.x && b.y < m.y + m.size && b.y + m.size > m.y) {
             m.alive = false;
             bullets.splice(bIdx, 1);
             score += 15;
@@ -362,5 +362,4 @@
     gameLoop();
   </script>
 </body>
-  </html>
-  
+</html>
