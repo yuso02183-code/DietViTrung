@@ -62,7 +62,7 @@
     bgImg.src = 'bg.jpg';
 
     // Danh sách Emoji quái thú
-    const MONSTER_EMOJIS = ['🐯','🦁','🦍','🦏','🫎','🫏','🐖','🐱','🐺','🐮','🐗','🐴','🦎','🦕','🐢','🐊','🐍','🦖','🐂','🐃','🦬','🐏','🐑','🐐','🦌','🦙','🦥','🦘','🦓','🐘','🦣','🦛','🦒','🐆','🐅','🐒','🦧','🐪','🦔','🦨','🦅','🦉','🦜','🐦','🕊️','🪿','🦈'];
+    const MONSTER_EMOJIS = ['🐯','🦁','🦍','🦏','🫎','🫏','🐖','🐱','🐺','🐮','🐗','🐴','🦎','🦕','🐢','🐊','🐍','🦖','🐂','🐃','🦬','🐏','🐑','🐐','🦌','🦙','🦥','🦘','ZEBRA','🐘','🦣','🦛','🦒','🐆','🐅','🐒','🦧','🐪','🦔','🦨','🦅','🦉','🦜','🐦','🕊️','🪿','🦈'];
 
     let stage = 1;
     let score = 0;
@@ -74,9 +74,9 @@
     let weaponLevel = 1;
 
     const player = {
-      x: canvas.width / 2 - 40,
-      y: canvas.height - 160,
-      size: 80,
+      x: canvas.width / 2 - 45,
+      y: canvas.height - 180,
+      size: 90,
       emoji: '🗼'
     };
 
@@ -113,9 +113,9 @@
       }
 
       boss = {
-        x: canvas.width / 2 - 70,
+        x: canvas.width / 2 - 75,
         y: 40,
-        size: 140,
+        size: 150,
         speed: 4 + stage * 0.4,
         dir: 1,
         hp: 20 + stage * 5,
@@ -129,7 +129,8 @@
       score = 0;
       hp = 3;
       weaponLevel = 1;
-      player.x = canvas.width / 2 - 40;
+      player.x = canvas.width / 2 - 45;
+      player.y = canvas.height - 180;
       gameOver = false;
       restartTimer = 0;
       startStage(1);
@@ -137,20 +138,24 @@
 
     resetGame();
 
-    // Điều khiển phi thuyền di chuyển trục ngang bám sát theo ngón tay
-    function handleInput(clientX) {
+    // Điều khiển Phi thuyền di chuyển tự do hoàn toàn theo vị trí ngón tay
+    function handleInput(clientX, clientY) {
       if (gameOver) return;
       const rect = canvas.getBoundingClientRect();
       const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+
       const touchX = (clientX - rect.left) * scaleX;
-      
-      // Giữ phi thuyền di chuyển chính xác trên đường ngang và không bị tràn ra khỏi mép màn hình
+      const touchY = (clientY - rect.top) * scaleY;
+
+      // Phi thuyền di chuyển mượt bám sát vị trí ngón tay chạm
       player.x = Math.max(0, Math.min(canvas.width - player.size, touchX - player.size / 2));
+      player.y = Math.max(80, Math.min(canvas.height - player.size, touchY - player.size / 2));
     }
 
-    canvas.addEventListener('touchmove', (e) => { e.preventDefault(); handleInput(e.touches[0].clientX); }, { passive: false });
-    canvas.addEventListener('touchstart', (e) => { e.preventDefault(); handleInput(e.touches[0].clientX); }, { passive: false });
-    canvas.addEventListener('mousemove', (e) => { if (e.buttons === 1) handleInput(e.clientX); });
+    canvas.addEventListener('touchmove', (e) => { e.preventDefault(); handleInput(e.touches[0].clientX, e.touches[0].clientY); }, { passive: false });
+    canvas.addEventListener('touchstart', (e) => { e.preventDefault(); handleInput(e.touches[0].clientX, e.touches[0].clientY); }, { passive: false });
+    canvas.addEventListener('mousemove', (e) => { if (e.buttons === 1) handleInput(e.clientX, e.clientY); });
     canvas.addEventListener('click', (e) => { if (gameOver) resetGame(); });
 
     // Bắn đạn đá (🪨)
@@ -296,19 +301,30 @@
         return;
       }
 
-      // 2. Vẽ Phi thuyền 🗼
-      ctx.font = `${player.size}px Arial`;
+      // 2. Vẽ Phi thuyền 🗼 (Tạo hiệu ứng hào quang phát sáng đậm nét)
+      ctx.save();
+      ctx.shadowColor = '#ff2200';
+      ctx.shadowBlur = 25;
+      ctx.font = `bold ${player.size}px Arial`;
       ctx.fillText(player.emoji, player.x, player.y + player.size);
+      ctx.restore();
 
-      // 3. Vẽ Boss khổng lồ
+      // 3. Vẽ Boss khổng lồ (Thêm phát sáng vàng rực rỡ)
       if (boss && boss.alive) {
-        ctx.font = `${boss.size}px Arial`;
+        ctx.save();
+        ctx.shadowColor = '#ffb86c';
+        ctx.shadowBlur = 30;
+        ctx.font = `bold ${boss.size}px Arial`;
         ctx.fillText(boss.emoji, boss.x, boss.y + boss.size);
+        ctx.restore();
 
+        // Thanh máu Boss đậm nét hơn
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        ctx.fillRect(boss.x - 5, boss.y - 30, boss.size + 10, 18);
         ctx.fillStyle = '#ff5555';
-        ctx.fillRect(boss.x, boss.y - 24, boss.size, 12);
+        ctx.fillRect(boss.x, boss.y - 26, boss.size, 10);
         ctx.fillStyle = '#50fa7b';
-        ctx.fillRect(boss.x, boss.y - 24, (boss.hp / boss.maxHp) * boss.size, 12);
+        ctx.fillRect(boss.x, boss.y - 26, (boss.hp / boss.maxHp) * boss.size, 10);
       }
 
       // 4. Vẽ Quái thường
@@ -362,4 +378,4 @@
     gameLoop();
   </script>
 </body>
-      </html>
+  </html>
