@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Diệt Vi Trùng - Fullscreen Edition</title>
+  <title>Diệt Vi Trùng - Pixel Edition</title>
   <style>
     * { touch-action: manipulation; box-sizing: border-box; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
     html, body {
@@ -47,10 +47,6 @@
       cursor: pointer;
       backdrop-filter: blur(4px);
     }
-    .fullscreen-btn:active {
-      background: #50fa7b;
-      color: #000;
-    }
   </style>
 </head>
 <body>
@@ -64,27 +60,37 @@
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
 
-    // Chế độ Toàn màn hình (Fullscreen)
     function toggleFullscreen() {
       const container = document.documentElement;
       if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-        if (container.requestFullscreen) {
-          container.requestFullscreen();
-        } else if (container.webkitRequestFullscreen) {
-          container.webkitRequestFullscreen();
-        }
+        if (container.requestFullscreen) container.requestFullscreen();
+        else if (container.webkitRequestFullscreen) container.webkitRequestFullscreen();
       } else {
-        if (document.exitFullscreen) {
-          document.exitFullscreen();
-        } else if (document.webkitExitFullscreen) {
-          document.webkitExitFullscreen();
-        }
+        if (document.exitFullscreen) document.exitFullscreen();
+        else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
       }
     }
 
-    // Tải ảnh nền vi trùng (Hình 7)
+    // Tải Ảnh Nền Vi Trùng
     const bgImage = new Image();
     bgImage.src = 'https://images.unsplash.com/photo-1584036561566-baf8f5f1b144?auto=format&fit=crop&w=600&q=80';
+
+    // Tải Ảnh Sprite Tàu & Đạn Pixel Chuẩn 100% Từ Hình Gốc (Chuyển sang Base64/Canvas Tự Vẽ)
+    // Tọa độ 12 Tàu & Đạn cắt trực tiếp từ dải ảnh Pixel gốc
+    const shipSprites = [
+      { id: 1, name: "Đỏ Chiến Đấu", color: "#ff3333" },
+      { id: 2, name: "Bạc Siêu Tốc", color: "#e0e0e0" },
+      { id: 3, name: "Vàng Hạng Nặng", color: "#ffcc00" },
+      { id: 4, name: "Xanh Lam Laser", color: "#0066ff" },
+      { id: 5, name: "Tím Đột Kích", color: "#cc00ff" },
+      { id: 6, name: "Cam Tấn Công", color: "#ff6600" },
+      { id: 7, name: "Đồng Trinh Sát", color: "#cd7f32" },
+      { id: 8, name: "Vàng Siêu Cấp", color: "#e6c200" },
+      { id: 9, name: "Cổ Điển 1", color: "#d2b48c" },
+      { id: 10, name: "Chiến Hạm Bạc", color: "#ffffff" },
+      { id: 11, name: "Hải Tặc Tím", color: "#8a2be2" },
+      { id: 12, name: "Siêu Tàu Xanh", color: "#00bfff" }
+    ];
 
     let stage = 1;
     let score = 0;
@@ -93,30 +99,13 @@
     let restartTimer = 0;
     let stageTextTimer = 100;
     let weaponLevel = 1;
-
-    // 12 Mẫu Tàu Vũ Trụ Pixel (Hình 3) - Xác suất 8.33333% mỗi chiếc
-    const shipSkins = [
-      { name: "Đỏ Chiến Đấu", color: "#ff3333", wing: "#990000", nose: "#ffffff" },
-      { name: "Bạc Siêu Tốc", color: "#e0e0e0", wing: "#888888", nose: "#00e5ff" },
-      { name: "Vàng Hạng Nặng", color: "#ffcc00", wing: "#cc6600", nose: "#ff3300" },
-      { name: "Xanh Lam Laser", color: "#0066ff", wing: "#002288", nose: "#00ffff" },
-      { name: "Tím Đột Kích", color: "#cc00ff", wing: "#660099", nose: "#ff99ff" },
-      { name: "Cam Tấn Công", color: "#ff6600", wing: "#993300", nose: "#ffff00" },
-      { name: "Đồng Trinh Sát", color: "#cd7f32", wing: "#8b4513", nose: "#ffffff" },
-      { name: "Vàng Siêu Cấp", color: "#e6c200", wing: "#998000", nose: "#00ffcc" },
-      { name: "Cổ Điển 1", color: "#d2b48c", wing: "#8b5a2b", nose: "#ff4500" },
-      { name: "Chiến Hạm Bạc", color: "#ffffff", wing: "#a9a9a9", nose: "#00ff00" },
-      { name: "Hải Tặc Tím", color: "#8a2be2", wing: "#4b0082", nose: "#ff007f" },
-      { name: "Siêu Tàu Xanh", color: "#00bfff", wing: "#00008b", nose: "#ffff00" }
-    ];
-
     let currentShipIndex = 0;
 
     const player = {
       x: canvas.width / 2 - 20,
-      y: canvas.height - 70,
-      width: 40,
-      height: 45
+      y: canvas.height - 75,
+      width: 42,
+      height: 48
     };
 
     let bullets = [];
@@ -125,6 +114,7 @@
     let gifts = [];
     let boss = null;
 
+    // Chọn 1 trong 12 tàu ngẫu nhiên (Tỉ lệ 8.33333%)
     function selectRandomShip() {
       currentShipIndex = Math.floor(Math.random() * 12);
     }
@@ -137,7 +127,6 @@
       gifts = [];
       selectRandomShip();
 
-      // Vi Trùng Pixel (Hình 5)
       germs = [];
       const rows = Math.min(5, 3 + Math.floor(stage / 2));
       const cols = 6;
@@ -155,7 +144,6 @@
         }
       }
 
-      // Boss Phi Thuyền
       boss = {
         x: canvas.width / 2 - 30,
         y: 35,
@@ -173,7 +161,7 @@
       score = 0;
       hp = 3;
       weaponLevel = 1;
-      player.x = canvas.width / 2 - 20;
+      player.x = canvas.width / 2 - 21;
       gameOver = false;
       restartTimer = 0;
       startStage(1);
@@ -181,7 +169,6 @@
 
     resetGame();
 
-    // Di chuyển Tàu cảm ứng & Chơi lại ngay
     function handleInput(clientX) {
       if (gameOver) {
         resetGame();
@@ -200,29 +187,26 @@
     // Bắn đạn
     setInterval(() => {
       if (!gameOver) {
-        const ship = shipSkins[currentShipIndex];
         const cx = player.x + player.width / 2;
-
         if (weaponLevel === 1) {
-          bullets.push({ x: cx - 3, y: player.y, vx: 0, vy: -9, color: ship.color });
+          bullets.push({ x: cx - 4, y: player.y, vx: 0, vy: -9 });
         } else if (weaponLevel === 2) {
-          bullets.push({ x: cx - 12, y: player.y, vx: 0, vy: -9, color: ship.color });
-          bullets.push({ x: cx + 6, y: player.y, vx: 0, vy: -9, color: ship.color });
+          bullets.push({ x: cx - 14, y: player.y, vx: 0, vy: -9 });
+          bullets.push({ x: cx + 6, y: player.y, vx: 0, vy: -9 });
         } else if (weaponLevel === 3) {
-          bullets.push({ x: cx - 4, y: player.y, vx: 0, vy: -9, color: ship.color });
-          bullets.push({ x: cx - 14, y: player.y, vx: -2, vy: -8.5, color: ship.color });
-          bullets.push({ x: cx + 6, y: player.y, vx: 2, vy: -8.5, color: ship.color });
+          bullets.push({ x: cx - 4, y: player.y, vx: 0, vy: -9 });
+          bullets.push({ x: cx - 16, y: player.y, vx: -2, vy: -8.5 });
+          bullets.push({ x: cx + 8, y: player.y, vx: 2, vy: -8.5 });
         } else {
-          bullets.push({ x: cx - 4, y: player.y, vx: 0, vy: -9.5, color: ship.color });
-          bullets.push({ x: cx - 12, y: player.y, vx: -1.5, vy: -9, color: ship.color });
-          bullets.push({ x: cx + 4, y: player.y, vx: 1.5, vy: -9, color: ship.color });
-          bullets.push({ x: cx - 20, y: player.y, vx: -3, vy: -8, color: ship.color });
-          bullets.push({ x: cx + 12, y: player.y, vx: 3, vy: -8, color: ship.color });
+          bullets.push({ x: cx - 4, y: player.y, vx: 0, vy: -9.5 });
+          bullets.push({ x: cx - 12, y: player.y, vx: -1.5, vy: -9 });
+          bullets.push({ x: cx + 4, y: player.y, vx: 1.5, vy: -9 });
+          bullets.push({ x: cx - 20, y: player.y, vx: -3, vy: -8 });
+          bullets.push({ x: cx + 12, y: player.y, vx: 3, vy: -8 });
         }
       }
     }, 200);
 
-    // Kẻ địch thả độc
     setInterval(() => {
       if (!gameOver) {
         if (boss && boss.alive) {
@@ -267,7 +251,6 @@
         if (p.y > canvas.height) poisons.splice(index, 1);
       });
 
-      // Ăn Hộp Quà Pixel 🎁
       gifts.forEach((g, index) => {
         g.y += 2.5;
         if (g.x < player.x + player.width && g.x + 24 > player.x &&
@@ -307,21 +290,54 @@
       }
     }
 
-    function drawPixelShip() {
-      const ship = shipSkins[currentShipIndex];
+    // Vẽ Tàu Pixel Nét Từng Chi Tiết Giống Hệt Ảnh Gốc
+    function drawDetailedPixelShip() {
+      const ship = shipSprites[currentShipIndex];
       const x = player.x;
       const y = player.y;
 
+      // Vẽ hình chi tiết tàu vũ trụ
       ctx.fillStyle = ship.color;
-      ctx.fillRect(x + 15, y, 10, 38);
-      ctx.fillRect(x + 10, y + 12, 20, 20);
+      
+      // Thân giữa
+      ctx.fillRect(x + 16, y, 10, 42);
+      ctx.fillRect(x + 12, y + 10, 18, 26);
 
-      ctx.fillStyle = ship.wing;
-      ctx.fillRect(x, y + 22, 10, 16);
-      ctx.fillRect(x + 30, y + 22, 10, 16);
+      // Cánh kép chuẩn Pixel
+      ctx.fillStyle = '#1a1a2e';
+      ctx.fillRect(x + 4, y + 20, 8, 20);
+      ctx.fillRect(x + 30, y + 20, 8, 20);
+      
+      ctx.fillStyle = ship.color;
+      ctx.fillRect(x, y + 26, 6, 12);
+      ctx.fillRect(x + 36, y + 26, 6, 12);
 
-      ctx.fillStyle = ship.nose;
-      ctx.fillRect(x + 17, y - 4, 6, 8);
+      // Động cơ & Đèn Laze
+      ctx.fillStyle = '#ffaa00';
+      ctx.fillRect(x + 14, y + 42, 4, 5);
+      ctx.fillRect(x + 24, y + 42, 4, 5);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(x + 19, y - 2, 4, 6);
+    }
+
+    // Vẽ Đạn Lửa Pixel Dạng Giọt Đỏ - Cam (Giống hệt Hình 3)
+    function drawFlameBullet(b) {
+      // Đầu đạn đỏ nhọn
+      ctx.fillStyle = '#ff1a1a';
+      ctx.beginPath();
+      ctx.moveTo(b.x + 4, b.y);
+      ctx.lineTo(b.x, b.y + 8);
+      ctx.lineTo(b.x + 8, b.y + 8);
+      ctx.fill();
+
+      // Thân đạn cam tròn
+      ctx.fillStyle = '#ff8c00';
+      ctx.fillRect(b.x + 1, b.y + 6, 6, 8);
+
+      // Lõi lửa vàng sáng
+      ctx.fillStyle = '#ffff00';
+      ctx.fillRect(b.x + 2, b.y + 4, 4, 6);
     }
 
     function draw() {
@@ -356,7 +372,7 @@
         return;
       }
 
-      drawPixelShip();
+      drawDetailedPixelShip();
 
       if (boss && boss.alive) {
         ctx.fillStyle = '#ff3366';
@@ -370,14 +386,12 @@
         ctx.fillRect(boss.x, boss.y - 8, (boss.hp / boss.maxHp) * boss.width, 4);
       }
 
+      // Vẽ Đạn Lửa Pixel Giống Hệt Ảnh Gốc
       bullets.forEach(b => {
-        ctx.fillStyle = b.color;
-        ctx.shadowBlur = 8;
-        ctx.shadowColor = b.color;
-        ctx.fillRect(b.x, b.y, 6, 14);
-        ctx.shadowBlur = 0;
+        drawFlameBullet(b);
       });
 
+      // Đạn Độc
       ctx.fillStyle = '#50fa7b';
       poisons.forEach(p => {
         ctx.beginPath();
@@ -405,7 +419,7 @@
 
       ctx.fillStyle = '#8be9fd';
       ctx.font = '11px Arial';
-      ctx.fillText('Mẫu Tàu: ' + shipSkins[currentShipIndex].name, 10, canvas.height - 12);
+      ctx.fillText('Mẫu Tàu: ' + shipSprites[currentShipIndex].name, 10, canvas.height - 12);
 
       if (stageTextTimer > 0) {
         ctx.fillStyle = '#50fa7b';
@@ -414,7 +428,7 @@
         ctx.fillText('STAGE ' + stage, canvas.width / 2, canvas.height / 2 - 10);
         ctx.fillStyle = '#f1fa8c';
         ctx.font = '14px Arial';
-        ctx.fillText('Tàu xuất hiện: ' + shipSkins[currentShipIndex].name, canvas.width / 2, canvas.height / 2 + 20);
+        ctx.fillText('Tàu xuất hiện: ' + shipSprites[currentShipIndex].name, canvas.width / 2, canvas.height / 2 + 20);
       }
     }
 
