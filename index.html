@@ -2,213 +2,244 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>Diệt Vi Trùng - Màn & Phi Thuyền</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Diệt Vi Trùng - Fullscreen Edition</title>
   <style>
-    * { touch-action: manipulation; box-sizing: border-box; }
-    body {
+    * { touch-action: manipulation; box-sizing: border-box; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+    html, body {
       margin: 0; padding: 0;
-      background-color: #0d0f18; color: #fff;
+      width: 100%; height: 100%;
+      background-color: #050508; color: #fff;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       display: flex; flex-direction: column;
       justify-content: center; align-items: center;
-      min-height: 100vh; overflow: hidden;
+      overflow: hidden;
     }
-    h1 { color: #50fa7b; margin: 5px 0; font-size: 20px; text-shadow: 0 0 10px #50fa7b; }
-    .skin-selector {
-      margin-bottom: 8px;
-      display: flex; gap: 6px;
+    #game-container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      max-width: 480px;
+      max-height: 850px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
     }
-    .skin-btn {
-      background: #21252b; border: 2px solid #61afef; color: #fff;
-      padding: 4px 8px; border-radius: 5px; font-size: 11px; cursor: pointer;
-    }
-    .skin-btn.active { background: #61afef; color: #000; font-weight: bold; }
     canvas {
-      border: 3px solid #50fa7b;
-      border-radius: 12px;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
       background-color: #05050a;
-      box-shadow: 0 0 15px rgba(80, 250, 123, 0.3);
       touch-action: none;
     }
-    p { font-size: 12px; color: #8b949e; margin-top: 5px; }
+    .fullscreen-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 100;
+      background: rgba(0, 0, 0, 0.6);
+      border: 1.5px solid #50fa7b;
+      color: #50fa7b;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: bold;
+      cursor: pointer;
+      backdrop-filter: blur(4px);
+    }
+    .fullscreen-btn:active {
+      background: #50fa7b;
+      color: #000;
+    }
   </style>
 </head>
 <body>
 
-  <h1>🦠 DIỆT VI TRÙNG - CHIA MÀN 🚀</h1>
-  
-  <div class="skin-selector">
-    <button class="skin-btn active" onclick="setSkin(0)">Tàu Đỏ 🚀</button>
-    <button class="skin-btn" onclick="setSkin(1)">Tàu Bạc 🛸</button>
-    <button class="skin-btn" onclick="setSkin(2)">Tàu Vàng 🛰</button>
-    <button class="skin-btn" onclick="setSkin(3)">Tàu Lam ✈️</button>
+  <div id="game-container">
+    <button class="fullscreen-btn" onclick="toggleFullscreen()">⛶ Toàn màn hình</button>
+    <canvas id="gameCanvas" width="360" height="640"></canvas>
   </div>
-
-  <canvas id="gameCanvas" width="360" height="500"></canvas>
-  <p>Vuốt màn hình di chuyển | Tiêu diệt Phi thuyền & Vi trùng!</p>
 
   <script>
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
 
-    let currentSkin = 0;
+    // Chế độ Toàn màn hình (Fullscreen)
+    function toggleFullscreen() {
+      const container = document.documentElement;
+      if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+        if (container.requestFullscreen) {
+          container.requestFullscreen();
+        } else if (container.webkitRequestFullscreen) {
+          container.webkitRequestFullscreen();
+        }
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) {
+          document.webkitExitFullscreen();
+        }
+      }
+    }
+
+    // Tải ảnh nền vi trùng (Hình 7)
+    const bgImage = new Image();
+    bgImage.src = 'https://images.unsplash.com/photo-1584036561566-baf8f5f1b144?auto=format&fit=crop&w=600&q=80';
+
+    let stage = 1;
+    let score = 0;
+    let hp = 3;
+    let gameOver = false;
+    let restartTimer = 0;
+    let stageTextTimer = 100;
+    let weaponLevel = 1;
+
+    // 12 Mẫu Tàu Vũ Trụ Pixel (Hình 3) - Xác suất 8.33333% mỗi chiếc
     const shipSkins = [
-      { body: '#ff5555', wing: '#ff79c6', bullet: '#ff5555' },
-      { body: '#f8f8f2', wing: '#8be9fd', bullet: '#8be9fd' },
-      { body: '#f1fa8c', wing: '#ffb86c', bullet: '#f1fa8c' },
-      { body: '#bd93f9', wing: '#6272a4', bullet: '#bd93f9' }
+      { name: "Đỏ Chiến Đấu", color: "#ff3333", wing: "#990000", nose: "#ffffff" },
+      { name: "Bạc Siêu Tốc", color: "#e0e0e0", wing: "#888888", nose: "#00e5ff" },
+      { name: "Vàng Hạng Nặng", color: "#ffcc00", wing: "#cc6600", nose: "#ff3300" },
+      { name: "Xanh Lam Laser", color: "#0066ff", wing: "#002288", nose: "#00ffff" },
+      { name: "Tím Đột Kích", color: "#cc00ff", wing: "#660099", nose: "#ff99ff" },
+      { name: "Cam Tấn Công", color: "#ff6600", wing: "#993300", nose: "#ffff00" },
+      { name: "Đồng Trinh Sát", color: "#cd7f32", wing: "#8b4513", nose: "#ffffff" },
+      { name: "Vàng Siêu Cấp", color: "#e6c200", wing: "#998000", nose: "#00ffcc" },
+      { name: "Cổ Điển 1", color: "#d2b48c", wing: "#8b5a2b", nose: "#ff4500" },
+      { name: "Chiến Hạm Bạc", color: "#ffffff", wing: "#a9a9a9", nose: "#00ff00" },
+      { name: "Hải Tặc Tím", color: "#8a2be2", wing: "#4b0082", nose: "#ff007f" },
+      { name: "Siêu Tàu Xanh", color: "#00bfff", wing: "#00008b", nose: "#ffff00" }
     ];
 
-    function setSkin(index) {
-      currentSkin = index;
-      document.querySelectorAll('.skin-btn').forEach((btn, i) => {
-        btn.classList.toggle('active', i === index);
-      });
-    }
+    let currentShipIndex = 0;
 
     const player = {
       x: canvas.width / 2 - 20,
-      y: canvas.height - 65,
+      y: canvas.height - 70,
       width: 40,
-      height: 45,
-      score: 0,
-      hp: 3
+      height: 45
     };
 
-    let stage = 1;
     let bullets = [];
     let germs = [];
     let poisons = [];
+    let gifts = [];
     let boss = null;
-    let gameOver = false;
-    let stageTextTimer = 120;
-    let restartTimer = 0;
 
-    const bossTypes = [
-      { color: '#ff5555', name: 'Thuyền Đỏ 🛸', speed: 2 },
-      { color: '#bd93f9', name: 'Thuyền Tím 🛸', speed: 3 },
-      { color: '#f1fa8c', name: 'Thuyền Vàng 🛰️', speed: 1.5 }
-    ];
+    function selectRandomShip() {
+      currentShipIndex = Math.floor(Math.random() * 12);
+    }
+
+    function startStage(stageNum) {
+      stage = stageNum;
+      stageTextTimer = 90;
+      poisons = [];
+      bullets = [];
+      gifts = [];
+      selectRandomShip();
+
+      // Vi Trùng Pixel (Hình 5)
+      germs = [];
+      const rows = Math.min(5, 3 + Math.floor(stage / 2));
+      const cols = 6;
+      const germTypes = ['👾', '🦠', '🦀', '👽', '🕷️'];
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          germs.push({
+            x: 22 + c * 54,
+            y: 75 + r * 42,
+            width: 32,
+            height: 32,
+            icon: germTypes[r % germTypes.length],
+            alive: true
+          });
+        }
+      }
+
+      // Boss Phi Thuyền
+      boss = {
+        x: canvas.width / 2 - 30,
+        y: 35,
+        width: 60,
+        height: 32,
+        speed: 2 + stage * 0.2,
+        dir: 1,
+        hp: 12 + stage * 6,
+        maxHp: 12 + stage * 6,
+        alive: true
+      };
+    }
 
     function resetGame() {
-      player.score = 0;
-      player.hp = 3;
+      score = 0;
+      hp = 3;
+      weaponLevel = 1;
       player.x = canvas.width / 2 - 20;
       gameOver = false;
       restartTimer = 0;
       startStage(1);
     }
 
-    function startStage(stageNum) {
-      stage = stageNum;
-      stageTextTimer = 100;
-      poisons = [];
-      bullets = [];
+    resetGame();
 
-      germs = [];
-      const rows = Math.min(5, 3 + Math.floor(stage / 2));
-      const cols = 6;
-      const types = ['👾', '🦠', '☣️', '👽'];
-      for (let r = 0; r < rows; r++) {
-        for (let c = 0; c < cols; c++) {
-          germs.push({
-            x: 25 + c * 52,
-            y: 75 + r * 40,
-            width: 32,
-            height: 32,
-            icon: types[r % types.length],
-            alive: true
-          });
-        }
-      }
-
-      const randomBoss = bossTypes[Math.floor(Math.random() * bossTypes.length)];
-      boss = {
-        x: canvas.width / 2 - 25,
-        y: 35,
-        width: 50,
-        height: 30,
-        color: randomBoss.color,
-        speed: randomBoss.speed,
-        dir: 1,
-        hp: 10 + stage * 5,
-        maxHp: 10 + stage * 5,
-        alive: true
-      };
-    }
-
-    startStage(1);
-
-    // Xử lý cảm ứng: Di chuyển hoặc Bấm để chơi lại khi thua
-    function handleTouch(clientX) {
+    // Di chuyển Tàu cảm ứng & Chơi lại ngay
+    function handleInput(clientX) {
       if (gameOver) {
         resetGame();
         return;
       }
       const rect = canvas.getBoundingClientRect();
-      const touchX = clientX - rect.left;
+      const scale = canvas.width / rect.width;
+      const touchX = (clientX - rect.left) * scale;
       player.x = Math.max(0, Math.min(canvas.width - player.width, touchX - player.width / 2));
     }
 
-    canvas.addEventListener('touchmove', (e) => {
-      e.preventDefault();
-      handleTouch(e.touches[0].clientX);
-    });
+    canvas.addEventListener('touchmove', (e) => { e.preventDefault(); handleInput(e.touches[0].clientX); });
+    canvas.addEventListener('touchstart', (e) => { handleInput(e.touches[0].clientX); });
+    canvas.addEventListener('click', (e) => { if (gameOver) resetGame(); });
 
-    canvas.addEventListener('touchstart', (e) => {
-      if (gameOver) {
-        resetGame();
-      }
-    });
-
-    // Bắn đạn tự động
+    // Bắn đạn
     setInterval(() => {
       if (!gameOver) {
-        bullets.push({
-          x: player.x + player.width / 2 - 3,
-          y: player.y,
-          width: 6,
-          height: 14,
-          speed: 8,
-          color: shipSkins[currentSkin].bullet
-        });
-      }
-    }, 220);
+        const ship = shipSkins[currentShipIndex];
+        const cx = player.x + player.width / 2;
 
-    // Địch thả độc
+        if (weaponLevel === 1) {
+          bullets.push({ x: cx - 3, y: player.y, vx: 0, vy: -9, color: ship.color });
+        } else if (weaponLevel === 2) {
+          bullets.push({ x: cx - 12, y: player.y, vx: 0, vy: -9, color: ship.color });
+          bullets.push({ x: cx + 6, y: player.y, vx: 0, vy: -9, color: ship.color });
+        } else if (weaponLevel === 3) {
+          bullets.push({ x: cx - 4, y: player.y, vx: 0, vy: -9, color: ship.color });
+          bullets.push({ x: cx - 14, y: player.y, vx: -2, vy: -8.5, color: ship.color });
+          bullets.push({ x: cx + 6, y: player.y, vx: 2, vy: -8.5, color: ship.color });
+        } else {
+          bullets.push({ x: cx - 4, y: player.y, vx: 0, vy: -9.5, color: ship.color });
+          bullets.push({ x: cx - 12, y: player.y, vx: -1.5, vy: -9, color: ship.color });
+          bullets.push({ x: cx + 4, y: player.y, vx: 1.5, vy: -9, color: ship.color });
+          bullets.push({ x: cx - 20, y: player.y, vx: -3, vy: -8, color: ship.color });
+          bullets.push({ x: cx + 12, y: player.y, vx: 3, vy: -8, color: ship.color });
+        }
+      }
+    }, 200);
+
+    // Kẻ địch thả độc
     setInterval(() => {
       if (!gameOver) {
         if (boss && boss.alive) {
-          poisons.push({
-            x: boss.x + boss.width / 2 - 4,
-            y: boss.y + boss.height,
-            width: 8,
-            height: 12,
-            speed: 4 + stage * 0.3
-          });
+          poisons.push({ x: boss.x + boss.width / 2 - 4, y: boss.y + boss.height, speed: 4 + stage * 0.3 });
         }
         const aliveGerms = germs.filter(g => g.alive);
         if (aliveGerms.length > 0) {
-          const shooter = aliveGerms[Math.floor(Math.random() * aliveGerms.length)];
-          poisons.push({
-            x: shooter.x + shooter.width / 2 - 4,
-            y: shooter.y + shooter.height,
-            width: 8,
-            height: 12,
-            speed: 3 + stage * 0.3
-          });
+          const g = aliveGerms[Math.floor(Math.random() * aliveGerms.length)];
+          poisons.push({ x: g.x + g.width / 2 - 4, y: g.y + g.height, speed: 3 + stage * 0.3 });
         }
       }
-    }, 900);
+    }, 850);
 
     function update() {
       if (gameOver) {
         restartTimer++;
-        // Tự động Reset sau ~3 giây (180 frames)
-        if (restartTimer >= 180) {
-          resetGame();
-        }
+        if (restartTimer >= 180) resetGame();
         return;
       }
 
@@ -216,131 +247,147 @@
 
       if (boss && boss.alive) {
         boss.x += boss.speed * boss.dir;
-        if (boss.x <= 10 || boss.x + boss.width >= canvas.width - 10) {
-          boss.dir *= -1;
-        }
+        if (boss.x <= 10 || boss.x + boss.width >= canvas.width - 10) boss.dir *= -1;
       }
 
-      bullets.forEach((bullet, index) => {
-        bullet.y -= bullet.speed;
-        if (bullet.y < 0) bullets.splice(index, 1);
+      bullets.forEach((b, index) => {
+        b.x += b.vx || 0;
+        b.y += b.vy || -9;
+        if (b.y < 0 || b.x < 0 || b.x > canvas.width) bullets.splice(index, 1);
       });
 
-      poisons.forEach((poison, index) => {
-        poison.y += poison.speed;
-        if (poison.x < player.x + player.width &&
-            poison.x + poison.width > player.x &&
-            poison.y < player.y + player.height &&
-            poison.y + poison.height > player.y) {
+      poisons.forEach((p, index) => {
+        p.y += p.speed;
+        if (p.x < player.x + player.width && p.x + 8 > player.x &&
+            p.y < player.y + player.height && p.y + 12 > player.y) {
           poisons.splice(index, 1);
-          player.hp -= 1;
-          if (player.hp <= 0) {
-            gameOver = true;
-            restartTimer = 0;
-          }
+          hp -= 1;
+          if (hp <= 0) { gameOver = true; restartTimer = 0; }
         }
-        if (poison.y > canvas.height) poisons.splice(index, 1);
+        if (p.y > canvas.height) poisons.splice(index, 1);
       });
 
-      bullets.forEach((bullet, bIndex) => {
-        if (boss && boss.alive &&
-            bullet.x < boss.x + boss.width &&
-            bullet.x + bullet.width > boss.x &&
-            bullet.y < boss.y + boss.height &&
-            bullet.y + bullet.height > boss.y) {
+      // Ăn Hộp Quà Pixel 🎁
+      gifts.forEach((g, index) => {
+        g.y += 2.5;
+        if (g.x < player.x + player.width && g.x + 24 > player.x &&
+            g.y < player.y + player.height && g.y + 24 > player.y) {
+          gifts.splice(index, 1);
+          if (weaponLevel < 4) weaponLevel++;
+          score += 50;
+        }
+        if (g.y > canvas.height) gifts.splice(index, 1);
+      });
+
+      bullets.forEach((b, bIdx) => {
+        if (boss && boss.alive && b.x < boss.x + boss.width && b.x + 8 > boss.x && b.y < boss.y + boss.height && b.y + 14 > boss.y) {
           boss.hp -= 1;
-          bullets.splice(bIndex, 1);
-          player.score += 20;
+          bullets.splice(bIdx, 1);
+          score += 20;
           if (boss.hp <= 0) {
             boss.alive = false;
-            player.score += 200;
+            score += 250;
+            gifts.push({ x: boss.x + boss.width / 2 - 12, y: boss.y });
           }
           return;
         }
 
-        germs.forEach((germ) => {
-          if (germ.alive &&
-              bullet.x < germ.x + germ.width &&
-              bullet.x + bullet.width > germ.x &&
-              bullet.y < germ.y + germ.height &&
-              bullet.y + bullet.height > germ.y) {
-            germ.alive = false;
-            bullets.splice(bIndex, 1);
-            player.score += 15;
+        germs.forEach((g) => {
+          if (g.alive && b.x < g.x + g.width && b.x + 8 > g.x && b.y < g.y + g.height && b.y + 14 > g.y) {
+            g.alive = false;
+            bullets.splice(bIdx, 1);
+            score += 15;
+            if (Math.random() < 0.22) gifts.push({ x: g.x + 4, y: g.y });
           }
         });
       });
 
-      const allGermsDead = germs.every(g => !g.alive);
-      const bossDead = !boss || !boss.alive;
-      if (allGermsDead && bossDead) {
+      if (germs.every(g => !g.alive) && (!boss || !boss.alive)) {
         startStage(stage + 1);
       }
     }
 
-    function drawPlayerShip() {
-      const skin = shipSkins[currentSkin];
-      ctx.fillStyle = skin.body;
-      ctx.beginPath();
-      ctx.moveTo(player.x + player.width / 2, player.y);
-      ctx.lineTo(player.x + 5, player.y + player.height);
-      ctx.lineTo(player.x + player.width - 5, player.y + player.height);
-      ctx.fill();
+    function drawPixelShip() {
+      const ship = shipSkins[currentShipIndex];
+      const x = player.x;
+      const y = player.y;
 
-      ctx.fillStyle = skin.wing;
-      ctx.fillRect(player.x - 4, player.y + player.height - 15, 10, 12);
-      ctx.fillRect(player.x + player.width - 6, player.y + player.height - 15, 10, 12);
-    }
+      ctx.fillStyle = ship.color;
+      ctx.fillRect(x + 15, y, 10, 38);
+      ctx.fillRect(x + 10, y + 12, 20, 20);
 
-    function drawBoss() {
-      if (!boss || !boss.alive) return;
-      ctx.fillStyle = boss.color;
-      ctx.beginPath();
-      ctx.ellipse(boss.x + boss.width / 2, boss.y + boss.height / 2, boss.width / 2, boss.height / 3, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = '#fff';
-      ctx.fillRect(boss.x + boss.width / 2 - 8, boss.y - 4, 16, 8);
+      ctx.fillStyle = ship.wing;
+      ctx.fillRect(x, y + 22, 10, 16);
+      ctx.fillRect(x + 30, y + 22, 10, 16);
 
-      ctx.fillStyle = '#ff5555';
-      ctx.fillRect(boss.x, boss.y - 12, boss.width, 5);
-      ctx.fillStyle = '#50fa7b';
-      ctx.fillRect(boss.x, boss.y - 12, (boss.hp / boss.maxHp) * boss.width, 5);
+      ctx.fillStyle = ship.nose;
+      ctx.fillRect(x + 17, y - 4, 6, 8);
     }
 
     function draw() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      if (bgImage.complete && bgImage.naturalWidth !== 0) {
+        ctx.drawImage(bgImage, 0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = 'rgba(5, 5, 12, 0.65)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      } else {
+        ctx.fillStyle = '#05050a';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      }
 
       if (gameOver) {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.88)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
         ctx.fillStyle = '#ff5555';
-        ctx.font = 'bold 26px Arial';
+        ctx.font = 'bold 28px Arial';
         ctx.textAlign = 'center';
         ctx.fillText('GAME OVER!', canvas.width / 2, canvas.height / 2 - 20);
+
         ctx.fillStyle = '#fff';
         ctx.font = '16px Arial';
-        ctx.fillText('Điểm: ' + player.score + ' | Màn đạt: ' + stage, canvas.width / 2, canvas.height / 2 + 15);
-        
-        const countdown = Math.ceil((180 - restartTimer) / 60);
+        ctx.fillText('Điểm: ' + score + ' | Màn đạt: ' + stage, canvas.width / 2, canvas.height / 2 + 15);
+
+        const cd = Math.ceil((180 - restartTimer) / 60);
         ctx.fillStyle = '#50fa7b';
-        ctx.fillText('Tự động chơi lại sau: ' + countdown + 's', canvas.width / 2, canvas.height / 2 + 50);
-        ctx.fillStyle = '#aaa';
+        ctx.fillText('Tự động hồi sinh sau: ' + cd + 's', canvas.width / 2, canvas.height / 2 + 50);
+        ctx.fillStyle = '#ffb86c';
         ctx.font = '13px Arial';
-        ctx.fillText('(Chạm vào màn hình để chơi lại ngay)', canvas.width / 2, canvas.height / 2 + 75);
+        ctx.fillText('👉 CHẠM MÀN HÌNH ĐỂ CHƠI LẠI NGAY 👈', canvas.width / 2, canvas.height / 2 + 85);
         return;
       }
 
-      drawPlayerShip();
-      drawBoss();
+      drawPixelShip();
+
+      if (boss && boss.alive) {
+        ctx.fillStyle = '#ff3366';
+        ctx.fillRect(boss.x, boss.y + 8, boss.width, 16);
+        ctx.fillStyle = '#990033';
+        ctx.fillRect(boss.x + 15, boss.y, 30, 28);
+        
+        ctx.fillStyle = '#ff5555';
+        ctx.fillRect(boss.x, boss.y - 8, boss.width, 4);
+        ctx.fillStyle = '#50fa7b';
+        ctx.fillRect(boss.x, boss.y - 8, (boss.hp / boss.maxHp) * boss.width, 4);
+      }
 
       bullets.forEach(b => {
         ctx.fillStyle = b.color;
-        ctx.fillRect(b.x, b.y, b.width, b.height);
+        ctx.shadowBlur = 8;
+        ctx.shadowColor = b.color;
+        ctx.fillRect(b.x, b.y, 6, 14);
+        ctx.shadowBlur = 0;
       });
 
       ctx.fillStyle = '#50fa7b';
       poisons.forEach(p => {
         ctx.beginPath();
-        ctx.arc(p.x + p.width / 2, p.y + p.height / 2, 5, 0, Math.PI * 2);
+        ctx.arc(p.x + 4, p.y + 6, 5, 0, Math.PI * 2);
         ctx.fill();
+      });
+
+      ctx.font = '20px serif';
+      gifts.forEach(g => {
+        ctx.fillText('🎁', g.x, g.y + 20);
       });
 
       ctx.font = '24px serif';
@@ -349,17 +396,25 @@
       });
 
       ctx.fillStyle = '#fff';
-      ctx.font = '14px Arial';
+      ctx.font = 'bold 13px Arial';
       ctx.textAlign = 'left';
-      ctx.fillText('Điểm: ' + player.score, 10, 22);
-      ctx.fillText('Màn: ' + stage, 150, 22);
-      ctx.fillText('Máu: ' + '❤️'.repeat(player.hp), 250, 22);
+      ctx.fillText('Điểm: ' + score, 10, 25);
+      ctx.fillText('Màn: ' + stage, 125, 25);
+      ctx.fillText('Đạn: Lvl ' + weaponLevel, 195, 25);
+      ctx.fillText('Máu: ' + '❤️'.repeat(hp), 270, 25);
+
+      ctx.fillStyle = '#8be9fd';
+      ctx.font = '11px Arial';
+      ctx.fillText('Mẫu Tàu: ' + shipSkins[currentShipIndex].name, 10, canvas.height - 12);
 
       if (stageTextTimer > 0) {
         ctx.fillStyle = '#50fa7b';
-        ctx.font = 'bold 30px Arial';
+        ctx.font = 'bold 28px Arial';
         ctx.textAlign = 'center';
-        ctx.fillText('STAGE ' + stage, canvas.width / 2, canvas.height / 2);
+        ctx.fillText('STAGE ' + stage, canvas.width / 2, canvas.height / 2 - 10);
+        ctx.fillStyle = '#f1fa8c';
+        ctx.font = '14px Arial';
+        ctx.fillText('Tàu xuất hiện: ' + shipSkins[currentShipIndex].name, canvas.width / 2, canvas.height / 2 + 20);
       }
     }
 
