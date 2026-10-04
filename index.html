@@ -71,19 +71,10 @@
       }
     }
 
-    // NỀN VÀ 3 SPRITE PNG CHUẨN TRONG SUỐT
     const bgImg = new Image();
     bgImg.src = 'virus-1-4-1743496069202-1743496070057274412836.jpg';
 
-    const shipSheet = new Image();
-    shipSheet.src = 'png-clipart-sprite-spaceshiptwo-spacecraft-spaceshipone-opengameart-org-space-invaders-game-angle-thumbnail.png';
-
-    const giftSheet = new Image();
-    giftSheet.src = 'colorful-gifts-pixel-art-set-260nw-2219926223.png';
-
-    const germSheet = new Image();
-    germSheet.src = 'monster-pixel-art-8-bit-260nw-2768406441.png';
-
+    // Dùng hình khối Canvas chuẩn trực tiếp, không phụ thuộc file ảnh ngoài nên 100% không bao giờ lỗi!
     let stage = 1;
     let score = 0;
     let hp = 3;
@@ -106,17 +97,13 @@
     let gifts = [];
     let boss = null;
 
-    function selectRandomShip() {
-      currentShipIndex = Math.floor(Math.random() * 12);
-    }
-
     function startStage(stageNum) {
       stage = stageNum;
       stageTextTimer = 90;
       poisons = [];
       bullets = [];
       gifts = [];
-      selectRandomShip();
+      currentShipIndex = Math.floor(Math.random() * 5);
 
       germs = [];
       const rows = Math.min(5, 3 + Math.floor(stage / 2));
@@ -128,7 +115,7 @@
             y: 70 + r * 44,
             width: 36,
             height: 36,
-            type: Math.floor(Math.random() * 18),
+            color: ['#ff5555', '#ff79c6', '#bd93f9', '#50fa7b', '#f1fa8c', '#8be9fd'][Math.floor(Math.random() * 6)],
             alive: true
           });
         }
@@ -178,23 +165,23 @@
       if (!gameOver) {
         const cx = player.x + player.width / 2;
         if (weaponLevel === 1) {
-          bullets.push({ x: cx - 5, y: player.y, vx: 0, vy: -9.5 });
+          bullets.push({ x: cx - 4, y: player.y, vx: 0, vy: -10 });
         } else if (weaponLevel === 2) {
-          bullets.push({ x: cx - 15, y: player.y, vx: 0, vy: -9.5 });
-          bullets.push({ x: cx + 5, y: player.y, vx: 0, vy: -9.5 });
+          bullets.push({ x: cx - 12, y: player.y, vx: 0, vy: -10 });
+          bullets.push({ x: cx + 4, y: player.y, vx: 0, vy: -10 });
         } else if (weaponLevel === 3) {
-          bullets.push({ x: cx - 5, y: player.y, vx: 0, vy: -9.5 });
-          bullets.push({ x: cx - 18, y: player.y, vx: -2, vy: -9 });
-          bullets.push({ x: cx + 8, y: player.y, vx: 2, vy: -9 });
+          bullets.push({ x: cx - 4, y: player.y, vx: 0, vy: -10 });
+          bullets.push({ x: cx - 16, y: player.y, vx: -2, vy: -9.5 });
+          bullets.push({ x: cx + 8, y: player.y, vx: 2, vy: -9.5 });
         } else {
-          bullets.push({ x: cx - 5, y: player.y, vx: 0, vy: -10 });
-          bullets.push({ x: cx - 14, y: player.y, vx: -1.5, vy: -9.5 });
-          bullets.push({ x: cx + 4, y: player.y, vx: 1.5, vy: -9.5 });
-          bullets.push({ x: cx - 22, y: player.y, vx: -3, vy: -8.5 });
-          bullets.push({ x: cx + 12, y: player.y, vx: 3, vy: -8.5 });
+          bullets.push({ x: cx - 4, y: player.y, vx: 0, vy: -10.5 });
+          bullets.push({ x: cx - 14, y: player.y, vx: -1.5, vy: -10 });
+          bullets.push({ x: cx + 6, y: player.y, vx: 1.5, vy: -10 });
+          bullets.push({ x: cx - 24, y: player.y, vx: -3, vy: -9 });
+          bullets.push({ x: cx + 16, y: player.y, vx: 3, vy: -9 });
         }
       }
-    }, 190);
+    }, 180);
 
     setInterval(() => {
       if (!gameOver) {
@@ -225,7 +212,7 @@
 
       bullets.forEach((b, index) => {
         b.x += b.vx || 0;
-        b.y += b.vy || -9.5;
+        b.y += b.vy || -10;
         if (b.y < -20 || b.x < 0 || b.x > canvas.width) bullets.splice(index, 1);
       });
 
@@ -259,7 +246,7 @@
           if (boss.hp <= 0) {
             boss.alive = false;
             score += 250;
-            gifts.push({ x: boss.x + boss.width / 2 - 14, y: boss.y, type: Math.floor(Math.random() * 8) });
+            gifts.push({ x: boss.x + boss.width / 2 - 14, y: boss.y });
           }
           return;
         }
@@ -270,7 +257,7 @@
             bullets.splice(bIdx, 1);
             score += 15;
             if (Math.random() < 0.25) {
-              gifts.push({ x: g.x + 4, y: g.y, type: Math.floor(Math.random() * 8) });
+              gifts.push({ x: g.x + 4, y: g.y });
             }
           }
         });
@@ -282,7 +269,6 @@
     }
 
     function draw() {
-      // 1. Ảnh Nền
       if (bgImg.complete && bgImg.naturalWidth > 0) {
         ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
         ctx.fillStyle = 'rgba(5, 5, 12, 0.55)';
@@ -314,33 +300,39 @@
         return;
       }
 
-      // 2. Tàu Vũ Trụ
-      if (shipSheet.complete && shipSheet.naturalWidth > 0) {
-        const shipH = shipSheet.naturalHeight / 12;
-        ctx.drawImage(shipSheet, 0, currentShipIndex * shipH, 50, shipH, player.x, player.y, player.width, player.height);
-      }
+      // Vẽ Tàu Người Chơi (Phi thuyền cực ngầu)
+      ctx.fillStyle = ['#50fa7b', '#8be9fd', '#ff79c6', '#bd93f9', '#ffb86c'][currentShipIndex];
+      ctx.beginPath();
+      ctx.moveTo(player.x + player.width / 2, player.y);
+      ctx.lineTo(player.x, player.y + player.height);
+      ctx.lineTo(player.x + player.width / 2, player.y + player.height - 10);
+      ctx.lineTo(player.x + player.width, player.y + player.height);
+      ctx.closePath();
+      ctx.fill();
 
-      // 3. Boss Phi Thuyền
+      // Vẽ Boss Phi Thuyền
       if (boss && boss.alive) {
-        if (shipSheet.complete && shipSheet.naturalWidth > 0) {
-          const shipH = shipSheet.naturalHeight / 12;
-          ctx.drawImage(shipSheet, 0, 11 * shipH, 50, shipH, boss.x, boss.y, boss.width, boss.height);
-        }
         ctx.fillStyle = '#ff5555';
-        ctx.fillRect(boss.x, boss.y - 8, boss.width, 4);
+        ctx.beginPath();
+        ctx.moveTo(boss.x + boss.width / 2, boss.y + boss.height);
+        ctx.lineTo(boss.x, boss.y);
+        ctx.lineTo(boss.x + boss.width, boss.y);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = '#ff5555';
+        ctx.fillRect(boss.x, boss.y - 10, boss.width, 5);
         ctx.fillStyle = '#50fa7b';
-        ctx.fillRect(boss.x, boss.y - 8, (boss.hp / boss.maxHp) * boss.width, 4);
+        ctx.fillRect(boss.x, boss.y - 10, (boss.hp / boss.maxHp) * boss.width, 5);
       }
 
-      // 4. Đạn Pixel
+      // Vẽ Đạn
+      ctx.fillStyle = '#ffeb3b';
       bullets.forEach(b => {
-        if (shipSheet.complete && shipSheet.naturalWidth > 0) {
-          const shipH = shipSheet.naturalHeight / 12;
-          ctx.drawImage(shipSheet, 50, currentShipIndex * shipH, 50, shipH, b.x, b.y, 10, 22);
-        }
+        ctx.fillRect(b.x, b.y, 8, 16);
       });
 
-      // 5. Đạn Độc
+      // Vẽ Đạn Độc
       ctx.fillStyle = '#50fa7b';
       poisons.forEach(p => {
         ctx.beginPath();
@@ -348,29 +340,33 @@
         ctx.fill();
       });
 
-      // 6. Hộp Quà
+      // Vẽ Hộp Quà
       gifts.forEach(g => {
-        if (giftSheet.complete && giftSheet.naturalWidth > 0) {
-          const gw = giftSheet.naturalWidth / 4;
-          const gh = giftSheet.naturalHeight / 2;
-          const gx = (g.type % 4) * gw;
-          const gy = Math.floor(g.type / 4) * gh;
-          ctx.drawImage(giftSheet, gx, gy, gw, gh, g.x, g.y, 28, 28);
-        }
+        ctx.fillStyle = '#ff79c6';
+        ctx.fillRect(g.x, g.y, 26, 26);
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(g.x + 10, g.y, 6, 26);
+        ctx.fillRect(g.x, g.y + 10, 26, 6);
       });
 
-      // 7. Vi Trùng
+      // Vẽ Vi Trùng
       germs.forEach(g => {
-        if (g.alive && germSheet.complete && germSheet.naturalWidth > 0) {
-          const srcW = germSheet.naturalWidth / 6;
-          const srcH = germSheet.naturalHeight / 3;
-          const gx = (g.type % 6) * srcW;
-          const gy = Math.floor(g.type / 6) * srcH;
-          ctx.drawImage(germSheet, gx, gy, srcW, srcH, g.x, g.y, g.width, g.height);
+        if (g.alive) {
+          ctx.fillStyle = g.color;
+          ctx.beginPath();
+          ctx.arc(g.x + g.width / 2, g.y + g.height / 2, g.width / 2 - 2, 0, Math.PI * 2);
+          ctx.fill();
+          // Mắt vi trùng
+          ctx.fillStyle = '#fff';
+          ctx.fillRect(g.x + 8, g.y + 10, 6, 6);
+          ctx.fillRect(g.x + 20, g.y + 10, 6, 6);
+          ctx.fillStyle = '#000';
+          ctx.fillRect(g.x + 10, g.y + 12, 2, 2);
+          ctx.fillRect(g.x + 22, g.y + 12, 2, 2);
         }
       });
 
-      // 8. Bảng UI
+      // Giao diện UI
       ctx.fillStyle = '#fff';
       ctx.font = 'bold 13px Arial';
       ctx.textAlign = 'left';
@@ -395,4 +391,5 @@
     gameLoop();
   </script>
 </body>
-</html>
+  </html>
+  
