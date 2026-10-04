@@ -41,7 +41,7 @@
   <div class="skin-selector">
     <button class="skin-btn active" onclick="setSkin(0)">Tàu Đỏ 🚀</button>
     <button class="skin-btn" onclick="setSkin(1)">Tàu Bạc 🛸</button>
-    <button class="skin-btn" onclick="setSkin(2)">Tàu Vàng 🛰️️</button>
+    <button class="skin-btn" onclick="setSkin(2)">Tàu Vàng 🛰</button>
     <button class="skin-btn" onclick="setSkin(3)">Tàu Lam ✈️</button>
   </div>
 
@@ -82,14 +82,23 @@
     let poisons = [];
     let boss = null;
     let gameOver = false;
-    let stageTextTimer = 120; // Đếm thời gian hiện tên Màn
+    let stageTextTimer = 120;
+    let restartTimer = 0;
 
-    // Các loại Phi Thuyền Trùm ngẫu nhiên
     const bossTypes = [
       { color: '#ff5555', name: 'Thuyền Đỏ 🛸', speed: 2 },
       { color: '#bd93f9', name: 'Thuyền Tím 🛸', speed: 3 },
       { color: '#f1fa8c', name: 'Thuyền Vàng 🛰️', speed: 1.5 }
     ];
+
+    function resetGame() {
+      player.score = 0;
+      player.hp = 3;
+      player.x = canvas.width / 2 - 20;
+      gameOver = false;
+      restartTimer = 0;
+      startStage(1);
+    }
 
     function startStage(stageNum) {
       stage = stageNum;
@@ -97,7 +106,6 @@
       poisons = [];
       bullets = [];
 
-      // Tạo Vi trùng
       germs = [];
       const rows = Math.min(5, 3 + Math.floor(stage / 2));
       const cols = 6;
@@ -115,7 +123,6 @@
         }
       }
 
-      // Spam 1 Phi thuyền Trùm Ngẫu Nhiên ở mỗi màn
       const randomBoss = bossTypes[Math.floor(Math.random() * bossTypes.length)];
       boss = {
         x: canvas.width / 2 - 25,
@@ -133,15 +140,29 @@
 
     startStage(1);
 
-    // Điều khiển bằng cảm ứng
+    // Xử lý cảm ứng: Di chuyển hoặc Bấm để chơi lại khi thua
+    function handleTouch(clientX) {
+      if (gameOver) {
+        resetGame();
+        return;
+      }
+      const rect = canvas.getBoundingClientRect();
+      const touchX = clientX - rect.left;
+      player.x = Math.max(0, Math.min(canvas.width - player.width, touchX - player.width / 2));
+    }
+
     canvas.addEventListener('touchmove', (e) => {
       e.preventDefault();
-      const rect = canvas.getBoundingClientRect();
-      const touchX = e.touches[0].clientX - rect.left;
-      player.x = Math.max(0, Math.min(canvas.width - player.width, touchX - player.width / 2));
+      handleTouch(e.touches[0].clientX);
     });
 
-    // Bắn đạn liên tục
+    canvas.addEventListener('touchstart', (e) => {
+      if (gameOver) {
+        resetGame();
+      }
+    });
+
+    // Bắn đạn tự động
     setInterval(() => {
       if (!gameOver) {
         bullets.push({
@@ -155,10 +176,9 @@
       }
     }, 220);
 
-    // Thả đạn độc ngẫu nhiên
+    // Địch thả độc
     setInterval(() => {
       if (!gameOver) {
-        // Boss thả độc
         if (boss && boss.alive) {
           poisons.push({
             x: boss.x + boss.width / 2 - 4,
@@ -168,7 +188,6 @@
             speed: 4 + stage * 0.3
           });
         }
-        // Vi trùng thả độc
         const aliveGerms = germs.filter(g => g.alive);
         if (aliveGerms.length > 0) {
           const shooter = aliveGerms[Math.floor(Math.random() * aliveGerms.length)];
@@ -184,11 +203,17 @@
     }, 900);
 
     function update() {
-      if (gameOver) return;
+      if (gameOver) {
+        restartTimer++;
+        // Tự động Reset sau ~3 giây (180 frames)
+        if (restartTimer >= 180) {
+          resetGame();
+        }
+        return;
+      }
 
       if (stageTextTimer > 0) stageTextTimer--;
 
-      // Di chuyển Boss
       if (boss && boss.alive) {
         boss.x += boss.speed * boss.dir;
         if (boss.x <= 10 || boss.x + boss.width >= canvas.width - 10) {
@@ -196,30 +221,28 @@
         }
       }
 
-      // Di chuyển đạn
       bullets.forEach((bullet, index) => {
         bullet.y -= bullet.speed;
         if (bullet.y < 0) bullets.splice(index, 1);
       });
 
-      // Di chuyển đạn độc
       poisons.forEach((poison, index) => {
         poison.y += poison.speed;
-        // Trúng tàu người chơi
         if (poison.x < player.x + player.width &&
             poison.x + poison.width > player.x &&
             poison.y < player.y + player.height &&
             poison.y + poison.height > player.y) {
           poisons.splice(index, 1);
           player.hp -= 1;
-          if (player.hp <= 0) gameOver = true;
+          if (player.hp <= 0) {
+            gameOver = true;
+            restartTimer = 0;
+          }
         }
         if (poison.y > canvas.height) poisons.splice(index, 1);
       });
 
-      // Đạn va chạm Boss & Vi trùng
       bullets.forEach((bullet, bIndex) => {
-        // Bắn Boss
         if (boss && boss.alive &&
             bullet.x < boss.x + boss.width &&
             bullet.x + bullet.width > boss.x &&
@@ -235,7 +258,6 @@
           return;
         }
 
-        // Bắn Vi trùng
         germs.forEach((germ) => {
           if (germ.alive &&
               bullet.x < germ.x + germ.width &&
@@ -249,7 +271,6 @@
         });
       });
 
-      // Kiểm tra XONG MÀN (Hết boss và hết vi trùng) -> Qua Màn Tiếp theo!
       const allGermsDead = germs.every(g => !g.alive);
       const bossDead = !boss || !boss.alive;
       if (allGermsDead && bossDead) {
@@ -273,7 +294,6 @@
 
     function drawBoss() {
       if (!boss || !boss.alive) return;
-      // Thân Boss
       ctx.fillStyle = boss.color;
       ctx.beginPath();
       ctx.ellipse(boss.x + boss.width / 2, boss.y + boss.height / 2, boss.width / 2, boss.height / 3, 0, 0, Math.PI * 2);
@@ -281,7 +301,6 @@
       ctx.fillStyle = '#fff';
       ctx.fillRect(boss.x + boss.width / 2 - 8, boss.y - 4, 16, 8);
 
-      // Thanh Máu Boss
       ctx.fillStyle = '#ff5555';
       ctx.fillRect(boss.x, boss.y - 12, boss.width, 5);
       ctx.fillStyle = '#50fa7b';
@@ -295,25 +314,28 @@
         ctx.fillStyle = '#ff5555';
         ctx.font = 'bold 26px Arial';
         ctx.textAlign = 'center';
-        ctx.fillText('GAME OVER!', canvas.width / 2, canvas.height / 2 - 10);
+        ctx.fillText('GAME OVER!', canvas.width / 2, canvas.height / 2 - 20);
         ctx.fillStyle = '#fff';
         ctx.font = '16px Arial';
-        ctx.fillText('Điểm: ' + player.score + ' | Màn đạt: ' + stage, canvas.width / 2, canvas.height / 2 + 25);
-        ctx.fillText('Tải lại trang để chơi lại', canvas.width / 2, canvas.height / 2 + 55);
+        ctx.fillText('Điểm: ' + player.score + ' | Màn đạt: ' + stage, canvas.width / 2, canvas.height / 2 + 15);
+        
+        const countdown = Math.ceil((180 - restartTimer) / 60);
+        ctx.fillStyle = '#50fa7b';
+        ctx.fillText('Tự động chơi lại sau: ' + countdown + 's', canvas.width / 2, canvas.height / 2 + 50);
+        ctx.fillStyle = '#aaa';
+        ctx.font = '13px Arial';
+        ctx.fillText('(Chạm vào màn hình để chơi lại ngay)', canvas.width / 2, canvas.height / 2 + 75);
         return;
       }
 
-      // Vẽ người chơi & Boss
       drawPlayerShip();
       drawBoss();
 
-      // Vẽ đạn
       bullets.forEach(b => {
         ctx.fillStyle = b.color;
         ctx.fillRect(b.x, b.y, b.width, b.height);
       });
 
-      // Vẽ đạn độc
       ctx.fillStyle = '#50fa7b';
       poisons.forEach(p => {
         ctx.beginPath();
@@ -321,13 +343,11 @@
         ctx.fill();
       });
 
-      // Vẽ vi trùng
       ctx.font = '24px serif';
       germs.forEach(g => {
         if (g.alive) ctx.fillText(g.icon, g.x, g.y + g.height);
       });
 
-      // Thông số UI
       ctx.fillStyle = '#fff';
       ctx.font = '14px Arial';
       ctx.textAlign = 'left';
@@ -335,7 +355,6 @@
       ctx.fillText('Màn: ' + stage, 150, 22);
       ctx.fillText('Máu: ' + '❤️'.repeat(player.hp), 250, 22);
 
-      // Hiện chữ chuyển MÀN
       if (stageTextTimer > 0) {
         ctx.fillStyle = '#50fa7b';
         ctx.font = 'bold 30px Arial';
