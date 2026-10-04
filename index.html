@@ -4,6 +4,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Thợ Săn Quái Thú Emoji</title>
+  
+  <!-- Cấu hình PWA để cài thành App trên điện thoại -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0d1117">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Săn Quái Emoji">
+
   <style>
     * { touch-action: manipulation; box-sizing: border-box; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
     html, body {
@@ -66,6 +75,8 @@
 
     let stage = 1;
     let score = 0;
+    // Lấy thành tích cao nhất đã lưu
+    let highScore = parseInt(localStorage.getItem('emoji_hunter_highscore')) || 0;
     let hp = 3;
     let maxHp = 5;
     let gameOver = false;
@@ -73,7 +84,6 @@
     let stageTextTimer = 100;
     let weaponLevel = 1;
 
-    // Tên Lửa 🚀 rực rỡ
     const player = {
       x: canvas.width / 2 - 45,
       y: canvas.height - 200,
@@ -139,7 +149,6 @@
 
     resetGame();
 
-    // Di chuyển 8 hướng mượt mà bám sát ngón tay
     function handleInput(clientX, clientY) {
       if (gameOver) return;
       const rect = canvas.getBoundingClientRect();
@@ -158,7 +167,6 @@
     canvas.addEventListener('mousemove', (e) => { if (e.buttons === 1) handleInput(e.clientX, e.clientY); });
     canvas.addEventListener('click', (e) => { if (gameOver) resetGame(); });
 
-    // Bắn đạn đá (🪨)
     setInterval(() => {
       if (!gameOver) {
         const cx = player.x + player.size / 2 - 20;
@@ -175,7 +183,6 @@
       }
     }, 200);
 
-    // Quái thả cức (💩)
     setInterval(() => {
       if (!gameOver) {
         if (boss && boss.alive) {
@@ -215,7 +222,15 @@
             p.y < player.y + player.size && p.y + p.size > player.y) {
           poops.splice(index, 1);
           hp -= 1;
-          if (hp <= 0) { gameOver = true; restartTimer = 0; }
+          if (hp <= 0) {
+            gameOver = true;
+            restartTimer = 0;
+            // Kiểm tra và lưu kỷ lục mới
+            if (score > highScore) {
+              highScore = score;
+              localStorage.setItem('emoji_hunter_highscore', highScore);
+            }
+          }
         }
         if (p.y > canvas.height) poops.splice(index, 1);
       });
@@ -271,7 +286,6 @@
     }
 
     function draw() {
-      // 1. Vẽ Ảnh Nền Khu Rừng
       if (bgImg.complete && bgImg.naturalWidth > 0) {
         ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
       } else {
@@ -286,22 +300,27 @@
         ctx.fillStyle = '#ff5555';
         ctx.font = 'bold 56px Arial';
         ctx.textAlign = 'center';
-        ctx.fillText('GAME OVER!', canvas.width / 2, canvas.height / 2 - 40);
+        ctx.fillText('GAME OVER!', canvas.width / 2, canvas.height / 2 - 60);
 
         ctx.fillStyle = '#fff';
-        ctx.font = '32px Arial';
-        ctx.fillText('Điểm: ' + score + ' | Màn đạt: ' + stage, canvas.width / 2, canvas.height / 2 + 30);
+        ctx.font = '30px Arial';
+        ctx.fillText('Điểm: ' + score + ' | Màn đạt: ' + stage, canvas.width / 2, canvas.height / 2 + 0);
+
+        ctx.fillStyle = '#f1fa8c';
+        ctx.font = 'bold 32px Arial';
+        ctx.fillText('🏆 KỶ LỤC: ' + highScore, canvas.width / 2, canvas.height / 2 + 50);
 
         const cd = Math.ceil((180 - restartTimer) / 60);
         ctx.fillStyle = '#50fa7b';
-        ctx.fillText('Tự động chơi lại sau: ' + cd + 's', canvas.width / 2, canvas.height / 2 + 100);
-        ctx.fillStyle = '#ffb86c';
         ctx.font = '26px Arial';
-        ctx.fillText('👉 CHẠM MÀN HÌNH ĐỂ THỬ LẠI 👈', canvas.width / 2, canvas.height / 2 + 170);
+        ctx.fillText('Tự động chơi lại sau: ' + cd + 's', canvas.width / 2, canvas.height / 2 + 110);
+        ctx.fillStyle = '#ffb86c';
+        ctx.font = '24px Arial';
+        ctx.fillText('👉 CHẠM MÀN HÌNH ĐỂ THỬ LẠI 👈', canvas.width / 2, canvas.height / 2 + 160);
         return;
       }
 
-      // 2. Vẽ Phi thuyền Tên Lửa 🚀 đẹp mắt (Hiệu ứng viền nét nổi)
+      // Phi thuyền 🚀
       ctx.save();
       ctx.shadowColor = 'rgba(255, 255, 255, 0.8)';
       ctx.shadowBlur = 12;
@@ -309,7 +328,7 @@
       ctx.fillText(player.emoji, player.x, player.y + player.size);
       ctx.restore();
 
-      // 3. Vẽ Boss khổng lồ
+      // Boss
       if (boss && boss.alive) {
         ctx.save();
         ctx.shadowColor = 'rgba(255, 200, 0, 0.8)';
@@ -318,7 +337,6 @@
         ctx.fillText(boss.emoji, boss.x, boss.y + boss.size);
         ctx.restore();
 
-        // Thanh máu Boss gọn gàng
         ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
         ctx.fillRect(boss.x - 5, boss.y - 30, boss.size + 10, 16);
         ctx.fillStyle = '#ff5555';
@@ -327,7 +345,7 @@
         ctx.fillRect(boss.x, boss.y - 26, (boss.hp / boss.maxHp) * boss.size, 8);
       }
 
-      // 4. Vẽ Quái thường
+      // Quái thường
       monsters.forEach(m => {
         if (m.alive) {
           ctx.font = `${m.size}px Arial`;
@@ -335,32 +353,32 @@
         }
       });
 
-      // 5. Vẽ Đạn đá 🪨
+      // Đạn
       bullets.forEach(b => {
         ctx.font = `${b.size}px Arial`;
         ctx.fillText('🪨', b.x, b.y + b.size);
       });
 
-      // 6. Vẽ cức 💩
+      // Vật cản
       poops.forEach(p => {
         ctx.font = `${p.size}px Arial`;
         ctx.fillText('💩', p.x, p.y + p.size);
       });
 
-      // 7. Vẽ Quà 🎁 & Tim ❤️
+      // Vật phẩm
       items.forEach(it => {
         ctx.font = `${it.size}px Arial`;
         ctx.fillText(it.emoji, it.x, it.y + it.size);
       });
 
-      // Giao diện UI
+      // Giao diện UI có Kỷ lục
       ctx.fillStyle = '#fff';
-      ctx.font = 'bold 26px Arial';
+      ctx.font = 'bold 24px Arial';
       ctx.textAlign = 'left';
-      ctx.fillText('Điểm: ' + score, 20, 50);
-      ctx.fillText('Màn: ' + stage, 220, 50);
-      ctx.fillText('Đạn: Lvl ' + weaponLevel, 360, 50);
-      ctx.fillText('Máu: ' + '❤️'.repeat(hp), 520, 50);
+      ctx.fillText('Điểm: ' + score, 20, 45);
+      ctx.fillText('Màn: ' + stage, 180, 45);
+      ctx.fillText('🏆 ' + highScore, 310, 45);
+      ctx.fillText('Máu: ' + '❤️'.repeat(hp), 520, 45);
 
       if (stageTextTimer > 0) {
         ctx.fillStyle = '#50fa7b';
@@ -376,6 +394,13 @@
       requestAnimationFrame(gameLoop);
     }
     gameLoop();
+
+    // Đăng ký Service Worker để cho phép chơi Offline
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch(err => console.log('SW reg failed:', err));
+      });
+    }
   </script>
 </body>
   </html>
